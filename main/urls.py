@@ -1,0 +1,16 @@
+from django.urls import path
+from . import views
+urlpatterns = [
+    path('', views.слушатели_view, name='student_list'),
+    path('organisations/', views.организации_view, name='organisation_list'),
+    path('groups/', views.группы_view, name='group_list'),
+    path('courses/', views.курсы_view, name='course_list'),
+    path('materials/', views.материалы_view, name='material_list'),
+    path('delete_listener/<int:id>/', views.delete_listener, name='delete_listener'),
+    path('delete_group/<int:id>/', views.delete_group, name='delete_group'),
+    path('delete_group_linking/<int:id>/', views.delete_group_linking, name='delete_group_linking'),
+    path('delete_course/<int:id>/', views.delete_course, name='delete_course'),
+    path('delete_material/<int:id>/', views.delete_material, name='delete_material'),
+    path('delete_organisation/<int:id>/', views.delete_organisation, name='delete_organisation'),
+    path('delete_org_linking/<int:id>/', views.delete_org_linking, name='delete_org_linking'),
+]

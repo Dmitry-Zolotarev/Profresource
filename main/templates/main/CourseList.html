@@ -1,0 +1,47 @@
+{% extends 'main/MainMenu.html' %}
+{% block title %}ООО "Профресурс" - курсы{% endblock %}
+{% block content %}
+    <h3>Список курсов</h3>
+    <div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Название курса</th>
+                    <th>Тип</th>
+                    <th>Удалить</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for курс in курсы %}
+                    <tr>
+                        <td>{{ курс.Название }}</td>
+                        <td>{{ курс.Тип.Название }}</td>
+                        <td>
+                            <form method="post" action="{% url 'delete_course' курс.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="delete-button" onclick="return confirm('Удалить эту запись?');">X</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="3">Курсы отсутствуют</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h3>Добавление нового курса</h3>
+        <form class="account-form" method="post" action="{% url 'course_list' %}">
+            {% csrf_token %}
+            <label>Название курса:</label><br>
+            <input type="text" name="Название" required><br>
+
+            <label>Тип курса:</label><br>
+            <select name="Тип">
+                {% for тип in типы_курсов %}
+                    <option value="{{ тип.id }}">{{ тип.Название }}</option>
+                {% endfor %}
+            </select><br><br>
+            <button type="submit" name="submit_course">Добавить курс</button>
+        </form>
+    </div>
+{% endblock %}

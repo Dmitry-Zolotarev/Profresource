@@ -1,0 +1,111 @@
+{% extends 'main/MainMenu.html' %}
+{% block title %}ООО "Профресурс" - Слушатели{% endblock %}
+
+{% block content %}
+<h3>Список слушателей</h3>
+
+<!-- Сообщения от Django -->
+
+
+
+<div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Фамилия</th>
+                <th>Имя</th>
+                <th>Отчество</th>
+                <th>Дата рождения</th>
+                <th>Пол</th>
+                <th>Гражданство</th>
+                <th>Серия</th>
+                <th>Номер паспорта</th>
+                <th>ИНН</th>
+                <th>Номер СНИЛС</th>
+                <th>Телефон</th>
+                <th>Email</th>
+                <th>Удалить</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for слушатель in слушатели %}
+                <tr>
+                    <td>{{ слушатель.Фамилия }}</td>
+                    <td>{{ слушатель.Имя }}</td>
+                    <td>{{ слушатель.Отчество }}</td>
+                    <td>{{ слушатель.Дата_рождения|date:"d.m.Y" }}</td>
+                    <td>{{ слушатель.Пол.Название }}</td>
+                    <td>{{ слушатель.Гражданство.Краткое_название }}</td>
+                    <td>{{ слушатель.Серия_паспорта }}</td>
+                    <td>{{ слушатель.Номер_паспорта }}</td>
+                    <td>{{ слушатель.ИНН }}</td>
+                    <td>{{ слушатель.Номер_СНИЛС }}</td>
+                    <td>+{{ слушатель.Гражданство.Телефонный_код }}{{ слушатель.Телефон }}</td>
+                    <td>{{ слушатель.Email }}</td>
+                    <td>
+                        <form method="post" action="{% url 'delete_listener' слушатель.id %}">
+                            {% csrf_token %}
+                            <button title="Удалить запись" type="submit" class="delete-button"
+                               onclick="return confirm('Удалить эту запись?');">X</button>
+                        </form>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="13">Нет слушателей</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3>Добавление нового слушателя</h3>
+
+    <form class="account-form" method="post" action="{% url 'student_list' %}">
+        {% csrf_token %}
+
+        <label>Фамилия:</label><br>
+        <input type="text" name="Фамилия" required><br>
+
+        <label>Имя:</label><br>
+        <input type="text" name="Имя" required><br>
+
+        <label>Отчество:</label><br>
+        <input type="text" name="Отчество"><br>
+
+        <label>Дата рождения:</label><br>
+        <input type="date" name="Дата_рождения" required><br>
+
+        <label>Пол:</label><br>
+        <select name="Пол">
+            {% for пол in полы %}
+                <option value="{{ пол.id }}">{{ пол.Название }}</option>
+            {% endfor %}
+        </select><br>
+
+        <label>Гражданство:</label><br>
+        <select name="Гражданство">
+            {% for страна in страны %}
+                <option value="{{ страна.id }}">{{ страна.Название }}</option>
+            {% endfor %}
+        </select><br>
+
+        <label>Серия паспорта:</label><br>
+        <input type="text" name="Серия_паспорта" ><br>
+
+        <label>Номер паспорта:</label><br>
+        <input type="text" name="Номер_паспорта" required><br>
+
+        <label>ИНН:</label><br>
+        <input type="text" name="ИНН" pattern="\d{12}" title="ИНН должен состоять из 12 цифр" required><br>
+
+        <label>СНИЛС:</label><br>
+        <input type="text" name="Номер_СНИЛС" pattern="\d{3}-\d{3}-\d{3} \d{2}" title="Формат: XXX-XXX-XXX XX"><br>
+
+        <label>Телефон (без кода страны):</label><br>
+        <input type="text" name="Телефон" pattern="\d{10}" title="Телефон должен состоять из 10 цифр" required><br>
+
+        <label>Email:</label><br>
+        <input type="email" name="Email" pattern="[^@]+@[^@]+\.[^@]+" title="Формат: email@example.com" ><br><br>
+
+        <button type="submit">Добавить слушателя</button>
+    </form>
+</div>
+{% endblock %}

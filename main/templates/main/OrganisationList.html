@@ -1,0 +1,100 @@
+{% extends 'main/MainMenu.html' %}
+{% block title %}ООО "Профресурс" - организации{% endblock %}
+{% block content %}
+    <h3>Список организаций</h3>
+    <div>
+        <table class="table">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th>ИНН</th>
+                <th>ОГРН</th>
+                <th>Email</th>
+                <th>Удалить</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for организация in организации %}
+                <tr>
+                    <td>{{ организация.Название }}</td>
+                    <td>{{ организация.ИНН }}</td>
+                    <td>{{ организация.ОГРН }}</td>
+                    <td>{{ организация.Email }}</td>
+                    <td>
+                        <form method="post" action="{% url 'delete_organisation' организация.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="delete-button" onclick="return confirm('Удалить эту запись?');">X</button>
+                        </form>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5">Нет организаций</td></tr>
+            {% endfor %}
+        </tbody>
+        </table>
+        <h3>Добавление новой организации</h3>
+        <form class="account-form" method="post" action="{% url 'organisation_list' %}">
+            {% csrf_token %}
+            <label>Название:</label><br>
+            <input type="text" name="Название" required><br>
+
+            <label>ИНН:</label><br>
+            <input type="text" name="ИНН" title="ИНН должен состоять из 10 цифр" pattern="\d{10}" required><br>
+
+            <label>ОГРН:</label><br>
+            <input type="text" name="ОГРН"  title="ОГРН должен состоять из 13 цифр" pattern="\d{13}" required><br>
+
+            <label>Email:</label><br>
+            <input type="email" name="Email" pattern="[^@]+@[^@]+\.[^@]+" title="Формат: email@example.com"><br><br>
+            <button type="submit" name="submit_организация">Добавить организацию</button>
+        </form>
+    </div>
+    <h3>Привязка слушателей к организациям</h3>
+    <div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Слушатель</th>
+                    <th>Организация</th>
+                    <th>Удалить</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for чел_орг in привязки %}
+                    <tr>
+                        <td>{{ чел_орг.Слушатель.Фамилия }} {{ чел_орг.Слушатель.Имя }} {{ чел_орг.Слушатель.Отчество }} (ИНН: {{ чел_орг.Слушатель.ИНН }})</td>
+                        <td>{{ чел_орг.Организация.Название }} (ОГРН: {{ чел_орг.Организация.ОГРН }})</td>
+                        <td>
+                            <form method="post" action="{% url 'delete_org_linking' чел_орг.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="delete-button" onclick="return confirm('Удалить привязку?');">X</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="3">Привязки отсутствуют</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <h3>Добавить привязку</h3>
+        <form class="account-form" method="post" action="{% url 'organisation_list' %}">
+            {% csrf_token %}
+            <label>Слушатель:</label><br>
+            <select name="Слушатель">
+                {% for слушатель in слушатели %}
+                <option value="{{ слушатель.id }}">
+                    {{ слушатель.Фамилия }} {{ слушатель.Имя }} {{ слушатель.Отчество }} (ИНН: {{ слушатель.ИНН }})
+                </option>
+                {% endfor %}
+            </select><br>
+
+            <label>Организация:</label><br>
+            <select name="Организация">
+                {% for организация in организации %}
+                    <option value="{{ организация.id }}">{{ организация.Название }}</option>
+                {% endfor %}
+            </select><br><br>
+            <button type="submit" name="submit_привязка">Привязать</button>
+        </form>
+    </div>
+{% endblock %}

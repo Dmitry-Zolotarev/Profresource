@@ -1,0 +1,106 @@
+{% extends 'main/MainMenu.html' %}
+{% block title %}ООО "Профресурс" - группы{% endblock %}
+{% block content %}
+    <h3>Список групп</h3>
+    <div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Название группы</th>
+                    <th>Курс</th>
+                    <th>Дата начала</th>
+                    <th>Дата окончания</th>
+                    <th>Удалить</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for группа in группы %}
+                    <tr>
+                        <td>{{ группа.Название }}</td>
+                        <td>{{ группа.Курс.Название }} ({{ группа.Курс.Тип.Название }})</td>
+                        <td>{{ группа.Дата_начала_курса|date:"d.m.Y" }}</td>
+                        <td>{{ группа.Дата_окончания_курса|date:"d.m.Y" }}</td>
+                        <td>
+                            <form method="post" action="{% url 'delete_group' группа.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="delete-button" onclick="return confirm('Удалить эту запись?');">X</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5">Группы отсутствуют</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h3>Добавление новой группы</h3>
+        <form class="account-form" method="post" action="{% url 'group_list' %}">
+            {% csrf_token %}
+            <label>Название группы:</label><br>
+            <input type="text" name="Название" required><br>
+            <label>Курс:</label><br>
+            <select name="Курс" required>
+            {% for курс in курсы %}
+                <option value="{{ курс.id }}">{{ курс.Название }} - {{ курс.Тип.Название }}</option>
+            {% endfor %}
+            </select><br>
+            <label>Дата начала курса:</label><br>
+            <input type="date" name="Дата_начала_курса" required><br>
+
+            <label>Дата окончания курса:</label><br>
+            <input type="date" name="Дата_окончания_курса" required><br><br>
+
+            <button type="submit" name="submit_группа">Добавить группу</button>
+        </form>
+    </div>
+
+    <h3>Привязка слушателей к группам</h3>
+    <div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Слушатель</th>
+                    <th>Группа</th>
+                    <th>Удалить</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for чел_группа in Человек_группа %}
+                    <tr>
+                        <td>{{ чел_группа.Слушатель.Фамилия }} {{ чел_группа.Слушатель.Имя }} {{ чел_группа.Слушатель.Отчество }} (ИНН: {{ чел_группа.Слушатель.ИНН }})</td>
+                        <td>{{ чел_группа.Группа.Название }}</td>
+                        <td>
+                            <form method="post" action="{% url 'delete_group_linking' чел_группа.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="delete-button" onclick="return confirm('Удалить привязку?');">X</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="3">Привязки отсутствуют</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h3>Добавить привязку</h3>
+        <form class="account-form" method="post" action="{% url 'group_list' %}">
+            {% csrf_token %}
+            <label>Слушатель:</label><br>
+            <select name="Слушатель">
+                {% for слушатель in слушатели %}
+                <option value="{{ слушатель.id }}">
+                    {{ слушатель.Фамилия }} {{ слушатель.Имя }} {{ слушатель.Отчество }} (ИНН: {{ слушатель.ИНН }})
+                </option>
+                {% endfor %}
+            </select><br>
+
+            <label>Группа:</label><br>
+            <select name="Группа">
+                {% for группа in группы %}
+                    <option value="{{ группа.id }}">{{ группа.Название }}</option>
+                {% endfor %}
+            </select><br><br>
+            <button type="submit" name="submit_привязка">Привязать</button>
+        </form>
+    </div>
+{% endblock %}
