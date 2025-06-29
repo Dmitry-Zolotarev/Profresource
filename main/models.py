@@ -43,17 +43,17 @@ class Слушатели(models.Model):
     Гражданство = models.ForeignKey(Страны, on_delete=models.SET_NULL, null=True)
     Номер_СНИЛС = models.CharField(max_length=11, blank=True, null=True)
     ИНН = models.CharField(max_length=12, blank=True, null=True, unique=True)
-    Телефон = models.CharField(max_length=15, blank=True, null=True)
+    Телефон = models.CharField(max_length=10, blank=True, null=True)
     Email = models.EmailField(blank=True, null=True)
 
 class Человек_группа(models.Model):
     Слушатель = models.ForeignKey(Слушатели, on_delete=models.CASCADE)
     Группа = models.ForeignKey(Группы, on_delete=models.CASCADE)
 
-
 class Человек_организация(models.Model):
     Слушатель = models.ForeignKey(Слушатели, on_delete=models.CASCADE)
     Организация = models.ForeignKey(Организации, on_delete=models.CASCADE)
+    Должность = models.CharField(max_length=255, blank=True, null=False, default="")
 
 class Материалы_курсов(models.Model):
     Курс = models.ForeignKey(Курсы, on_delete=models.CASCADE)

@@ -54,8 +54,9 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>Слушатель</th>
+                    <th>Человек</th>
                     <th>Организация</th>
+                    <th>Должность</th>
                     <th>Удалить</th>
                 </tr>
             </thead>
@@ -64,6 +65,7 @@
                     <tr>
                         <td>{{ чел_орг.Слушатель.Фамилия }} {{ чел_орг.Слушатель.Имя }} {{ чел_орг.Слушатель.Отчество }} (ИНН: {{ чел_орг.Слушатель.ИНН }})</td>
                         <td>{{ чел_орг.Организация.Название }} (ОГРН: {{ чел_орг.Организация.ОГРН }})</td>
+                        <td>{{ чел_орг.Должность }}</td>
                         <td>
                             <form method="post" action="{% url 'delete_org_linking' чел_орг.id %}">
                                 {% csrf_token %}
@@ -72,7 +74,7 @@
                         </td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="3">Привязки отсутствуют</td></tr>
+                    <tr><td colspan="4">Привязки отсутствуют</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -93,7 +95,9 @@
                 {% for организация in организации %}
                     <option value="{{ организация.id }}">{{ организация.Название }}</option>
                 {% endfor %}
-            </select><br><br>
+            </select><br>
+            <label>Должность:</label><br>
+            <input type="text" name="Должность" required><br><br>
             <button type="submit" name="submit_привязка">Привязать</button>
         </form>
     </div>

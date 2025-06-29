@@ -4,62 +4,41 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 import re
 
-
 # Слушатели
 def слушатели_view(request):
+    error_found = False
     if request.method == 'POST':
-        фамилия = request.POST.get('Фамилия')
-        имя = request.POST.get('Имя')
-        отчество = request.POST.get('Отчество')
-        дата_рождения = request.POST.get('Дата_рождения')
-        пол = request.POST.get('Пол')
-        серия_паспорта = request.POST.get('Серия_паспорта')
-        номер_паспорта = request.POST.get('Номер_паспорта')
-        гражданство_id = request.POST.get('Гражданство')
-        номер_СНИЛС = request.POST.get('Номер_СНИЛС')
-        ИНН = request.POST.get('ИНН')
-        телефон = request.POST.get('Телефон')
-        email = request.POST.get('Email')
-
-        error_found = False
-
         # Проверки только для граждан РФ (id = 1)
-        if гражданство_id == "1":
-            if not re.fullmatch(r'\d{4}', серия_паспорта or ''):
+        if request.POST.get('Гражданство') == "1":
+            if not re.fullmatch(r'\d{4}', request.POST.get('Серия_паспорта') or ''):
                 messages.warning(request, "Серия паспорта РФ должна состоять из 4 цифр.")
                 error_found = True
-            if not re.fullmatch(r'\d{6}', номер_паспорта or ''):
+            if not re.fullmatch(r'\d{6}', request.POST.get('Номер_паспорта') or ''):
                 messages.warning(request, "Номер паспорта РФ должен состоять из 6 цифр.")
                 error_found = True
-
-        if Слушатели.objects.filter(
-            Фамилия=фамилия,
-            Имя=имя,
-            Отчество=отчество,
-            Дата_рождения=дата_рождения,
-            ИНН=ИНН
-        ).exists():
+        if Слушатели.objects.filter(ИНН=request.POST.get('ИНН')).exists():
+            messages.warning(request, "Человек с этим ИНН уже есть в базе данных!")
             error_found = True
-
+        if Слушатели.objects.filter(Номер_СНИЛС=request.POST.get('Номер_СНИЛС')).exists():
+            messages.warning(request, "Человек с этим СНИЛС уже есть в базе данных!")
+            error_found = True
         if not error_found:
             слушатель = Слушатели(
-                Фамилия=фамилия,
-                Имя=имя,
-                Отчество=отчество,
-                Дата_рождения=дата_рождения,
-                Пол=get_object_or_404(Пол, id=пол),
-                Серия_паспорта=серия_паспорта,
-                Номер_паспорта=номер_паспорта,
-                Номер_СНИЛС=номер_СНИЛС,
-                ИНН=ИНН,
-                Телефон=телефон,
-                Email=email
+                Фамилия=request.POST.get('Фамилия'),
+                Имя=request.POST.get('Имя'),
+                Отчество=request.POST.get('Отчество'),
+                Дата_рождения=request.POST.get('Дата_рождения'),
+                Пол_id=request.POST.get('Пол'),
+                Гражданство_id=request.POST.get('Гражданство'),
+                Серия_паспорта=request.POST.get('Серия_паспорта'),
+                Номер_паспорта=request.POST.get('Номер_паспорта'),
+                Номер_СНИЛС=request.POST.get('Номер_СНИЛС'),
+                ИНН=request.POST.get('ИНН'),
+                Телефон=request.POST.get('Телефон'),
+                Email=request.POST.get('Email'),
             )
-            if гражданство_id:
-                слушатель.Гражданство_id = гражданство_id
             слушатель.save()
             return redirect('student_list')
-
     return render(request, 'main/ListenerList.html', {
         'слушатели': Слушатели.objects.all(),
         'страны': Страны.objects.all(),
@@ -68,24 +47,19 @@ def слушатели_view(request):
 def группы_view(request):
     if request.method == 'POST':
         if 'submit_группа' in request.POST:
-            название = request.POST.get('Название')
-            курс = request.POST.get('Курс')
-            начало = request.POST.get('Дата_начала_курса')
-            окончание = request.POST.get('Дата_окончания_курса')
-
             if Группы.objects.filter(
-                    Название=название,
-                    Курс_id=курс,
-                    Дата_начала_курса=начало,
-                    Дата_окончания_курса=окончание
+                    Название=request.POST.get('Название'),
+                    Курс_id=request.POST.get('Курс'),
+                    Дата_начала_курса=request.POST.get('Дата_начала_курса'),
+                    Дата_окончания_курса=request.POST.get('Дата_окончания_курса')
             ).exists():
                 messages.warning(request, "Такой курс уже есть в базе данных!")
             else:
                 Группы.objects.create(
-                    Название=название,
-                    Курс=get_object_or_404(Курсы, id=курс),
-                    Дата_начала_курса=начало,
-                    Дата_окончания_курса=окончание
+                    Название=request.POST.get('Название'),
+                    Курс_id=request.POST.get('Курс'),
+                    Дата_начала_курса=request.POST.get('Дата_начала_курса'),
+                    Дата_окончания_курса=request.POST.get('Дата_окончания_курса')
                 )
                 return redirect('group_list')
         elif 'submit_привязка' in request.POST:
@@ -110,7 +84,6 @@ def группы_view(request):
         'Человек_группа': Человек_группа.objects.all(),
     })
 def курсы_view(request):
-
     if request.method == 'POST':
         тип = get_object_or_404(Типы_курсов, id=request.POST.get('Тип'))
         название = request.POST.get('Название')
@@ -127,23 +100,19 @@ def курсы_view(request):
 
 def материалы_view(request):
     if request.method == 'POST':
-        название = request.POST.get('Название')
-        ссылка = request.POST.get('Ссылка')
-        курс_id = request.POST.get('Курс')
-        тип_id = request.POST.get('Тип')
         if Материалы_курсов.objects.filter(
-                Название=название,
-                Ссылка_на_материал=ссылка,
-                Курс_id=курс_id,
-                Тип_id=тип_id,
+                Название=request.POST.get('Название'),
+                Ссылка_на_материал=request.POST.get('Ссылка'),
+                Курс_id=request.POST.get('Курс'),
+                Тип_id=request.POST.get('Тип'),
             ).exists():
             messages.warning(request, "Такой материал уже есть в базе данных!")
         else:
             Материалы_курсов.objects.create(
-                Название=название,
-                Ссылка_на_материал=ссылка,
-                Курс_id=курс_id,
-                Тип_id=тип_id,
+                Название=request.POST.get('Название'),
+                Ссылка_на_материал=request.POST.get('Ссылка'),
+                Курс_id=request.POST.get('Курс'),
+                Тип_id=request.POST.get('Тип'),
             )
             return redirect('material_list')
     return render(request, 'main/MaterialList.html', {
@@ -154,37 +123,33 @@ def материалы_view(request):
 def организации_view(request):
     if request.method == 'POST':
         if 'submit_организация' in request.POST:
-            название = request.POST.get('Название')
-            инн = request.POST.get('ИНН')
-            огрн = request.POST.get('ОГРН')
-            email = request.POST.get('Email')
             if Организации.objects.filter(
-                    Название=название,
-                    ИНН=инн,
-                    ОГРН=огрн,
-                    Email=email
+                    Название=request.POST.get('Название'),
+                    ИНН=request.POST.get('ИНН'),
+                    ОГРН=request.POST.get('ОГРН'),
+                    Email=request.POST.get('Email')
                 ).exists():
                 messages.warning(request, "Эта организация уже есть в базе данных!")
             else:
                 Организации.objects.create(
-                    Название=название,
-                    ИНН=инн,
-                    ОГРН=огрн,
-                    Email=email
+                    Название=request.POST.get('Название'),
+                    ИНН=request.POST.get('ИНН'),
+                    ОГРН=request.POST.get('ОГРН'),
+                    Email=request.POST.get('Email')
                 )
                 return redirect('organisation_list')
         elif 'submit_привязка' in request.POST:
-            слушатель = get_object_or_404(Слушатели, id=request.POST.get('Слушатель'))
-            организация = get_object_or_404(Организации, id=request.POST.get('Организация'))
             if Человек_организация.objects.filter(
-                    Слушатель=слушатель,
-                    Организация=организация,
+                    Слушатель_id=request.POST.get('Слушатель'),
+                    Организация_id=request.POST.get('Организация'),
+                    Должность=request.POST.get('Должность'),
             ).exists():
                 messages.warning(request, "Эта привязка уже есть в базе данных!")
             else:
                 Человек_организация.objects.create(
-                    Слушатель=слушатель,
-                    Организация=организация,
+                    Слушатель_id=request.POST.get('Слушатель'),
+                    Организация_id=request.POST.get('Организация'),
+                    Должность=request.POST.get('Должность'),
                 )
                 return redirect('organisation_list')
     #GET-запрос
