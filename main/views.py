@@ -182,8 +182,7 @@ def организации_view(request):
 def delete_listener(request, id):
     listener = get_object_or_404(Слушатели, id=id)
     if Человек_группа.objects.filter(Слушатель=listener).exists() \
-       or Человек_организация.objects.filter(Слушатель=listener).exists() \
-       or Адреса.objects.filter(id_студента=listener).exists():
+       or Человек_организация.objects.filter(Слушатель=listener).exists():
         messages.error(request, "Удаление отменено — есть зависимые записи.")
     else:
         listener.delete()
