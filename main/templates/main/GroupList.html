@@ -29,8 +29,6 @@
                             </form>
                         </td>
                     </tr>
-                {% empty %}
-                    <tr><td class="empty_table" colspan="5">Группы отсутствуют</td></tr>
                 {% endfor %}
             </tbody>
         </table><br>
@@ -57,7 +55,7 @@
     </div>
     <h3>Привязка слушателей к группам</h3>
     <div>
-        <table class="table">
+        <table class="table" id="group-linking-table"
             <thead>
                 <tr>
                     <th>Слушатель</th>
@@ -80,8 +78,6 @@
                             </form>
                         </td>
                     </tr>
-                {% empty %}
-                    <tr><td class="empty_table" colspan="4">Привязки отсутствуют</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -114,6 +110,20 @@
         </form>
     </div>
     <script>
+    function filterTable() {
+    const input = document.getElementById("Filter").value.toLowerCase();
+        // Таблица организаций
+        document.querySelectorAll("#group-table tbody tr").forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(input) ? "" : "none";
+        });
+        // Таблица привязок
+        document.querySelectorAll("#group-linking-table tbody tr").forEach(row => {
+            const orgCell = row.querySelector("td:nth-child(2)"); // 2-я колонка — организация
+            const text = orgCell?.innerText.toLowerCase() || "";
+            row.style.display = text.includes(input) ? "" : "none";
+        });
+    }
     document.querySelector('button[name="Группы_DOCX"]').addEventListener('click', function (e) {
     e.preventDefault();
 

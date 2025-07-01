@@ -3,7 +3,7 @@
 {% block content %}
     <h3>Список учебных материалов</h3>
     <div>
-        <table class="table">
+        <table class="table" id="material-table">
             <thead>
                 <tr>
                     <th>Выбор</th>
@@ -16,7 +16,7 @@
             <tbody>
                 {% for материал in материалы %}
                     <tr>
-                        <td><input type="checkbox"></td>>
+                        <td><input type="checkbox"></td>
                         <td>{{ материал.Курс.Название }} - {{ материал.Курс.Тип.Название }}</td>
                         <td>{{ материал.Тип.Название }}</td>
                         <td><a href="{{ материал.Ссылка_на_материал }}"
@@ -30,9 +30,7 @@
                             </form>
                         </td>
                     </tr>
-                {% empty %}
-                    <tr><td class="empty_table" colspan="5">Нет материалов</td></tr>
-                {% endfor %}
+                 {% endfor %}
             </tbody>
         </table>
 
@@ -58,4 +56,13 @@
             <button type="submit" name="submit_material">Добавить материал</button>
         </form>
     </div>
+    <script>
+    function filterTable() {
+    const input = document.getElementById("Filter").value.toLowerCase();
+        document.querySelectorAll("#material-table tbody tr").forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(input) ? "" : "none";
+        });
+    }
+    </script>
 {% endblock %}

@@ -19,13 +19,8 @@ from .models import (
     Статусы, Адреса
 )
 
-def _is_ajax(request):
-    return request.headers.get('x-requested-with') == 'XMLHttpRequest'
 
-
-# --- Слушатели ---
 def слушатели_view(request):
-
     if request.method == 'POST':
         error_found = False
         # Проверки только для граждан РФ (id = 1)
@@ -58,55 +53,8 @@ def слушатели_view(request):
                 Email=request.POST.get('Email'),
             ).save()
             return redirect('student_list')
-    if _is_ajax(request) and request.method == 'GET':
-        q = request.GET.get('q', '').strip()
-        qs = Слушатели.objects.annotate(
-            Пол_Название=F('Пол__Название'),
-            Гражданство_Название=F('Гражданство__Краткое_название'),
-            Телефонный_код=F('Гражданство__Телефонный_код')  # предполагается, что такое поле есть
-        ).filter(
-            Q(Фамилия__icontains=q) |
-            Q(Имя__icontains=q) |
-            Q(Отчество__icontains=q)
-        )
-
-        data = []
-        for слушатель in qs:
-            # форматирование даты рождения
-            dob = слушатель.Дата_рождения.strftime("%d.%m.%Y") if слушатель.Дата_рождения else ""
-            # объединение телефонного кода и номера телефона
-            phone = f"{слушатель.Гражданство.Телефонный_код}{слушатель.Телефон}" if слушатель.Телефон else ""
-            data.append({
-                'id': слушатель.id,
-                'Фамилия': слушатель.Фамилия,
-                'Имя': слушатель.Имя,
-                'Отчество': слушатель.Отчество or "",
-                'Дата_рождения': dob,
-                'Пол_Название': слушатель.Пол_Название,
-                'Гражданство_Название': слушатель.Гражданство_Название,
-                'Серия_паспорта': слушатель.Серия_паспорта or "",
-                'Номер_паспорта': слушатель.Номер_паспорта,
-                'ИНН': слушатель.ИНН,
-                'Номер_СНИЛС': слушатель.Номер_СНИЛС or "",
-                'Телефон': phone,
-                'Email': слушатель.Email or ""
-            })
-        return JsonResponse({'data': data})
-
-    # обработка POST-запроса и формирование данных для первичного рендеринга страницы остается без изменений
-    слушатели = Слушатели.objects.annotate(
-        Пол_Название=F('Пол__Название'),
-        Гражданство_Название=F('Гражданство__Название'),
-        Телефонный_код=F('Гражданство__Телефонный_код')  # если поле есть
-    ).values(
-        'id', 'Фамилия', 'Имя', 'Отчество', 'Дата_рождения',
-        'Пол_Название', 'Гражданство_Название',
-        'Серия_паспорта', 'Номер_паспорта', 'ИНН',
-        'Номер_СНИЛС', 'Телефон', 'Email', 'Телефонный_код'
-    )
-
     return render(request, 'main/ListenerList.html', {
-        'слушатели': слушатели,
+        'слушатели': Слушатели.objects.all(),
         'страны': Страны.objects.all(),
         'полы': Пол.objects.all(),
     })
@@ -230,31 +178,6 @@ def организации_view(request):
         'организации': Организации.objects.all(),
         'привязки': Человек_организация.objects.all(),
     })
-
-# --- AJAX-обновление записи ---
-@require_http_methods(['POST'])
-def update_record(request, model_name):
-    data = json.loads(request.body)
-    models = {
-        'listener': Слушатели,
-        'group': Группы,
-        'course': Курсы,
-        'material': Материалы_курсов,
-        'organisation': Организации,
-    }
-    Model = models.get(model_name)
-    if not Model:
-        return JsonResponse({'success': False, 'message': 'Unknown model'})
-
-    try:
-        obj = Model.objects.get(id=data['id'])
-        setattr(obj, data['field'], data['value'])
-        obj.save()
-        return JsonResponse({'success': True})
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)})
-
-# --- Удаление с проверкой зависимостей ---
 @require_http_methods(["POST"])
 def delete_listener(request, id):
     listener = get_object_or_404(Слушатели, id=id)

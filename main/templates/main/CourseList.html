@@ -1,6 +1,7 @@
 {% extends 'main/MainMenu.html' %}
 {% block title %}ООО "Профресурс" - курсы{% endblock %}
 {% block content %}
+
     <h3>Список курсов</h3>
     <div>
         <table class="table" id="course-table">
@@ -21,14 +22,13 @@
                         <td>{{ курс.Тип.Название }}</td>
                         <td>{{ курс.Объём_часов }}</td>
                         <td>
-                            <form action="{% url 'delete_course' курс.id %}">
+                            <form method="post" action="{% url 'delete_course' курс.id %}">
+                                {% csrf_token %}
                                 <button type="submit" class="delete-button" onclick="return confirm('Удалить эту запись?');">X</button>
                             </form>
                         </td>
                     </tr>
-                {% empty %}
-                    <tr><td class="empty_table" colspan="5">Курсы отсутствуют</td></tr>
-                {% endfor %}
+                 {% endfor %}
             </tbody>
         </table><br>
         <form method="post" action="{% url 'export_courses' %}">
@@ -55,6 +55,13 @@
         </form>
     </div>
     <script>
+    function filterTable() {
+    const input = document.getElementById("Filter").value.toLowerCase();
+        document.querySelectorAll("#course-table tbody tr").forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(input) ? "" : "none";
+        });
+    }
     document.querySelector('button[name="Курсы_DOCX"]').addEventListener('click', function (e) {
     e.preventDefault();
 

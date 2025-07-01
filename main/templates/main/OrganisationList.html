@@ -33,9 +33,7 @@
                         </form>
                     </td>
                 </tr>
-            {% empty %}
-                <tr><td class="empty_table"  colspan="7">Нет организаций</td></tr>
-            {% endfor %}
+             {% endfor %}
         </tbody>
         </table><br>
         <form action="{% url 'export_organisations' %}">
@@ -61,7 +59,7 @@
     </div>
     <h3>Привязка слушателей к организациям</h3>
     <div>
-        <table class="table">
+        <table class="table" id="org-linking-table">
             <thead>
                 <tr>
                     <th>Слушатель</th>
@@ -83,9 +81,7 @@
                             </form>
                         </td>
                     </tr>
-                {% empty %}
-                    <tr><td class="empty_table" colspan="4">Привязки отсутствуют</td></tr>
-                {% endfor %}
+                 {% endfor %}
             </tbody>
         </table>
         <h3>Добавить привязку</h3>
@@ -112,9 +108,23 @@
         </form>
     </div>
     <script>
+    function filterTable() {
+    const input = document.getElementById("Filter").value.toLowerCase();
+        // Таблица организаций
+        document.querySelectorAll("#organisation-table tbody tr").forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(input) ? "" : "none";
+        });
+
+        // Таблица привязок
+        document.querySelectorAll("#org-linking-table tbody tr").forEach(row => {
+            const orgCell = row.querySelector("td:nth-child(2)"); // 2-я колонка — организация
+            const text = orgCell?.innerText.toLowerCase() || "";
+            row.style.display = text.includes(input) ? "" : "none";
+        });
+    }
     document.querySelector('button[name="Организации_DOCX"]').addEventListener('click', function (e) {
     e.preventDefault();
-
     const selectedIds = [];
     document.querySelectorAll('#organisation-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
         if (checkbox.checked) {

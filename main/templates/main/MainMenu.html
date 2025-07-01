@@ -40,7 +40,9 @@
     <a href="{% url 'organisation_list' %}" class="organisation_list">Организации</a>
 </div>
 <div class="tab-content">
-
+    <br>
+    <input type="text" placeholder="Поиск записей в таблице" id ="Filter" name="Фильтр" style="width: 400px;" onkeyup="filterTable()" required>
+    <br>
     {% block content %}
     {% endblock %}
 </div>
