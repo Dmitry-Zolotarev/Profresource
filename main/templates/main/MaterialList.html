@@ -6,6 +6,7 @@
         <table class="table">
             <thead>
                 <tr>
+                    <th>Выбор</th>
                     <th>Курс</th>
                     <th>Тип материала</th>
                     <th>Материал</th>
@@ -15,6 +16,7 @@
             <tbody>
                 {% for материал in материалы %}
                     <tr>
+                        <td><input type="checkbox"></td>>
                         <td>{{ материал.Курс.Название }} - {{ материал.Курс.Тип.Название }}</td>
                         <td>{{ материал.Тип.Название }}</td>
                         <td><a href="{{ материал.Ссылка_на_материал }}"
@@ -29,7 +31,7 @@
                         </td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="4">Материалы отсутствуют</td></tr>
+                    <tr><td class="empty_table" colspan="5">Нет материалов</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -50,9 +52,9 @@
                 {% endfor %}
             </select><br>
             <label>Название материала:</label><br>
-            <input type="text" name="Название" required><br>
+            <input type="text" name="Название" style="width: 440px;" required><br>
             <label>Ссылка на материал:</label><br>
-            <input type="text" name="Ссылка" required><br><br>
+            <input type="text" name="Ссылка" style="width: 440px;" required><br><br>
             <button type="submit" name="submit_material">Добавить материал</button>
         </form>
     </div>

@@ -3,45 +3,98 @@
 {% block content %}
     <h3>Список курсов</h3>
     <div>
-        <table class="table">
+        <table class="table" id="course-table">
             <thead>
                 <tr>
+                    <th>Выбор</th>
                     <th>Название курса</th>
                     <th>Тип</th>
+                    <th>Количество часов</th>
                     <th>Удалить</th>
                 </tr>
             </thead>
             <tbody>
                 {% for курс in курсы %}
-                    <tr>
+                    <tr data-id="{{ курс.id }}">
+                        <td><input type="checkbox"></td>
                         <td>{{ курс.Название }}</td>
                         <td>{{ курс.Тип.Название }}</td>
+                        <td>{{ курс.Объём_часов }}</td>
                         <td>
-                            <form method="post" action="{% url 'delete_course' курс.id %}">
-                                {% csrf_token %}
+                            <form action="{% url 'delete_course' курс.id %}">
                                 <button type="submit" class="delete-button" onclick="return confirm('Удалить эту запись?');">X</button>
                             </form>
                         </td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="3">Курсы отсутствуют</td></tr>
+                    <tr><td class="empty_table" colspan="5">Курсы отсутствуют</td></tr>
                 {% endfor %}
             </tbody>
-        </table>
-
+        </table><br>
+        <form method="post" action="{% url 'export_courses' %}">
+            {% csrf_token %}
+            <button type="submit" name="Курсы_DOCX">Построить Word-документ</button>
+        </form>
         <h3>Добавление нового курса</h3>
         <form class="account-form" method="post" action="{% url 'course_list' %}">
             {% csrf_token %}
             <label>Название курса:</label><br>
-            <input type="text" name="Название" required><br>
+            <input type="text" name="Название" style="width: 400px;" required><br>
 
             <label>Тип курса:</label><br>
             <select name="Тип">
                 {% for тип in типы_курсов %}
                     <option value="{{ тип.id }}">{{ тип.Название }}</option>
                 {% endfor %}
-            </select><br><br>
+            </select><br>
+            <label>Количество часов:</label><br>
+            <input type="text" id="result" name="Объём_часов" min="1" max="1000"
+                   pattern="[0-9]{1,2}|1000" title="Число от 1 до 1000" required><br>
+            <br>
             <button type="submit" name="submit_course">Добавить курс</button>
         </form>
     </div>
+    <script>
+    document.querySelector('button[name="Курсы_DOCX"]').addEventListener('click', function (e) {
+    e.preventDefault();
+
+    const selectedIds = [];
+    document.querySelectorAll('#course-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
+        if (checkbox.checked) {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        }
+    });
+    //Если записи не выбраны галочками, будет добавлена вся таблица
+    if (selectedIds.length === 0) {
+        document.querySelectorAll('#course-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        });
+    }
+    fetch("{% url 'export_courses' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify({ ids: selectedIds })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Ошибка при генерации документа!');
+        return res.blob();
+    })
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "Курсы.docx";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    })
+    .catch(err => alert(err));
+    });
+    </script>
 {% endblock %}

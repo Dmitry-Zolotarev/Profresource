@@ -1,17 +1,15 @@
 {% extends 'main/MainMenu.html' %}
 {% block title %}ООО "Профресурс" - Слушатели{% endblock %}
-
 {% block content %}
+
 <h3>Список слушателей</h3>
-
-<!-- Сообщения от Django -->
-
-
-
+<input type="text" title="Поиск в записей таблице" name="Фильтр" placeholder="Поиск" style="width: 400px;" required>
+    <br><br>
 <div>
-    <table class="table">
+    <table class="table" id="student-table">
         <thead>
             <tr>
+                <th>Выбор</th>
                 <th>Фамилия</th>
                 <th>Имя</th>
                 <th>Отчество</th>
@@ -29,83 +27,188 @@
         </thead>
         <tbody>
             {% for слушатель in слушатели %}
-                <tr>
-                    <td>{{ слушатель.Фамилия }}</td>
-                    <td>{{ слушатель.Имя }}</td>
-                    <td>{{ слушатель.Отчество }}</td>
-                    <td>{{ слушатель.Дата_рождения|date:"d.m.Y" }}</td>
-                    <td>{{ слушатель.Пол.Название }}</td>
-                    <td>{{ слушатель.Гражданство.Краткое_название }}</td>
-                    <td>{{ слушатель.Серия_паспорта }}</td>
-                    <td>{{ слушатель.Номер_паспорта }}</td>
-                    <td>{{ слушатель.ИНН }}</td>
-                    <td>{{ слушатель.Номер_СНИЛС }}</td>
-                    <td>+{{ слушатель.Гражданство.Телефонный_код }}{{ слушатель.Телефон }}</td>
-                    <td>{{ слушатель.Email }}</td>
-                    <td>
-                        <form method="post" action="{% url 'delete_listener' слушатель.id %}">
-                            {% csrf_token %}
-                            <button title="Удалить запись" type="submit" class="delete-button"
-                               onclick="return confirm('Удалить эту запись?');">X</button>
-                        </form>
-                    </td>
-                </tr>
+            <tr data-id="{{ слушатель.id }}">
+                <td></td>
+                <td>{{ слушатель.Фамилия }}</td>
+                <td>{{ слушатель.Имя }}</td>
+                <td>{{ слушатель.Отчество|default:"" }}</td>
+                <td>{{ слушатель.Дата_рождения }}</td>
+                <td>{{ слушатель.Пол_Название }}</td>
+                <td>{{ слушатель.Гражданство_Название }}</td>
+                <td>{{ слушатель.Серия_паспорта|default:"" }}</td>
+                <td>{{ слушатель.Номер_паспорта }}</td>
+                <td>{{ слушатель.ИНН }}</td>
+                <td>{{ слушатель.Номер_СНИЛС|default:"" }}</td>
+                <td>{{ слушатель.Телефон }}</td>
+                <td>{{ слушатель.Email|default:"" }}</td>
+                <td>
+                    <form method="post" action="/delete_listener/{{ слушатель.id }}/">
+                        {% csrf_token %}
+                        <button type="submit" onclick="return confirm('Удалить эту запись?')">X</button>
+                    </form>
+                </td>
+            </tr>
             {% empty %}
-                <tr><td colspan="13">Нет слушателей</td></tr>
+                <tr><td class="empty_table" colspan="14">Нет слушателей</td></tr>
             {% endfor %}
         </tbody>
-    </table>
-
+    </table><br>
+     <form action="{% url 'export_listeners' %}">
+        <button type="submit" name="Слушатели_DOCX">Построить Word-документ</button>
+     </form>
     <h3>Добавление нового слушателя</h3>
-
     <form class="account-form" method="post" action="{% url 'student_list' %}">
         {% csrf_token %}
-
         <label>Фамилия:</label><br>
         <input type="text" name="Фамилия" required><br>
-
         <label>Имя:</label><br>
         <input type="text" name="Имя" required><br>
-
         <label>Отчество:</label><br>
         <input type="text" name="Отчество"><br>
-
         <label>Дата рождения:</label><br>
         <input type="date" name="Дата_рождения" required><br>
-
         <label>Пол:</label><br>
         <select name="Пол">
             {% for пол in полы %}
                 <option value="{{ пол.id }}">{{ пол.Название }}</option>
             {% endfor %}
         </select><br>
-
         <label>Гражданство:</label><br>
         <select name="Гражданство">
             {% for страна in страны %}
                 <option value="{{ страна.id }}">{{ страна.Название }}</option>
             {% endfor %}
         </select><br>
-
         <label>Серия паспорта:</label><br>
-        <input type="text" name="Серия_паспорта" ><br>
-
+        <input type="text" name="Серия_паспорта"><br>
         <label>Номер паспорта:</label><br>
         <input type="text" name="Номер_паспорта" required><br>
-
         <label>ИНН:</label><br>
         <input type="text" name="ИНН" pattern="\d{12}" title="ИНН должен состоять из 12 цифр" required><br>
-
         <label>СНИЛС:</label><br>
         <input type="text" name="Номер_СНИЛС" pattern="\d{3}-\d{3}-\d{3} \d{2}" title="Формат: XXX-XXX-XXX XX"><br>
-
         <label>Телефон (без кода страны):</label><br>
         <input type="text" name="Телефон" pattern="\d{10}" title="Телефон должен состоять из 10 цифр" required><br>
-
         <label>Email:</label><br>
-        <input type="email" name="Email" pattern="[^@]+@[^@]+\.[^@]+" title="Формат: email@example.com" ><br><br>
-
+        <input type="email" name="Email" pattern="[^@]+@[^@]+\.[^@]+" title="Формат: email@example.com"><br><br>
         <button type="submit">Добавить слушателя</button>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const input = document.querySelector('input[name="Фильтр"]');
+    const tbody = document.querySelector('#student-table tbody');
+
+    // Объект для хранения состояния checkbox'ов по ID слушателей
+    const checkboxState = {};
+
+    const loadData = (q = '') => {
+        // Сохраняем текущие состояния checkbox'ов
+        document.querySelectorAll('#student-table tbody tr').forEach(tr => {
+            const id = tr.dataset.id;
+            if (id) {
+                const checkbox = tr.querySelector('input[type="checkbox"]');
+                checkboxState[id] = checkbox?.checked || false;
+            }
+        });
+
+        fetch(`${location.pathname}?q=${encodeURIComponent(q)}`, {
+            headers: {'x-requested-with': 'XMLHttpRequest'}
+        })
+        .then(r => r.json())
+        .then(res => {
+            tbody.innerHTML = '';
+            res.data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.dataset.id = row.id;
+
+                // Восстанавливаем состояние checkbox'а
+                const checkboxTd = document.createElement('td');
+                checkboxTd.innerHTML = `<input type="checkbox" ${checkboxState[row.id] ? 'checked' : ''}>`;
+                tr.appendChild(checkboxTd);
+
+                const fields = [
+                    row.Фамилия,
+                    row.Имя,
+                    row.Отчество || '',
+                    new Date(row.Дата_рождения).toLocaleDateString('ru-RU'),
+                    row.Пол_Название,
+                    row.Гражданство_Название,
+                    row.Серия_паспорта || '',
+                    row.Номер_паспорта,
+                    row.ИНН,
+                    row.Номер_СНИЛС || '',
+                    `+${row.Телефон}`,
+                    row.Email || ''
+                ];
+                fields.forEach(value => {
+                    const td = document.createElement('td');
+                    td.textContent = value;
+                    tr.appendChild(td);
+                });
+
+                const tdDel = document.createElement('td');
+                tdDel.innerHTML = `
+                    <form method="post" action="/delete_listener/${row.id}/">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                        <button type="submit" class="delete-button" onclick="return confirm('Удалить эту запись?')">X</button>
+                    </form>`;
+                tr.appendChild(tdDel);
+
+                tbody.appendChild(tr);
+            });
+        })
+        .catch(err => {
+            console.error('Ошибка AJAX:', err);
+            alert('Ошибка при загрузке данных');
+        });
+    };
+
+    loadData(); // Загрузка данных при открытии страницы
+    input?.addEventListener('input', () => loadData(input.value));
+});
+document.querySelector('button[name="Слушатели_DOCX"]').addEventListener('click', function (e) {
+    e.preventDefault();
+
+    const selectedIds = [];
+    document.querySelectorAll('#student-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
+        if (checkbox.checked) {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        }
+    });
+    //Если записи не выбраны галочками, будет добавлена вся таблица
+    if (selectedIds.length === 0) {
+        document.querySelectorAll('#student-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        });
+    }
+    fetch("{% url 'export_listeners' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify({ ids: selectedIds })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Ошибка при генерации документа!');
+        return res.blob();
+    })
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "Слушатели.docx";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    })
+    .catch(err => alert(err));
+});
+</script>
+
 {% endblock %}

@@ -31,9 +31,7 @@
     {% endif %}
 </head>
 <body>
-<h2>Цифровая система ООО "Профресурс"</h2>
-<br>
-
+<br><h2>Цифровая система ООО "Профресурс"</h2>
 <div class="tab">
     <a href="{% url 'student_list' %}" class="student_list">Cлушатели</a>
     <a href="{% url 'group_list' %}" class="group_list">Группы</a>
@@ -41,8 +39,8 @@
     <a href="{% url 'material_list' %}" class="material_list">Материалы курсов</a>
     <a href="{% url 'organisation_list' %}" class="organisation_list">Организации</a>
 </div>
-
 <div class="tab-content">
+
     {% block content %}
     {% endblock %}
 </div>

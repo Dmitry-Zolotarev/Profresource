@@ -13,4 +13,8 @@ urlpatterns = [
     path('delete_material/<int:id>/', views.delete_material, name='delete_material'),
     path('delete_organisation/<int:id>/', views.delete_organisation, name='delete_organisation'),
     path('delete_org_linking/<int:id>/', views.delete_org_linking, name='delete_org_linking'),
+    path('export_listeners/', views.export_listeners, name='export_listeners'),
+    path('export_groups/', views.export_groups, name='export_groups'),
+    path('export_courses/', views.export_courses, name='export_courses'),
+    path('export_organisations/', views.export_organisations, name='export_organisations'),
 ]

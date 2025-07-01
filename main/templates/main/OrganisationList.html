@@ -3,22 +3,28 @@
 {% block content %}
     <h3>Список организаций</h3>
     <div>
-        <table class="table">
+        <table class="table" id="organisation-table">
         <thead>
             <tr>
+                <th>Выбор</th>
                 <th>Название</th>
                 <th>ИНН</th>
                 <th>ОГРН</th>
+                <th>Телефон</th>
                 <th>Email</th>
                 <th>Удалить</th>
             </tr>
         </thead>
         <tbody>
             {% for организация in организации %}
-                <tr>
+                <tr data-id="{{ организация.id }}">
+                    <td><input type="checkbox"></td>
                     <td>{{ организация.Название }}</td>
                     <td>{{ организация.ИНН }}</td>
                     <td>{{ организация.ОГРН }}</td>
+                    <td>{% if организация.Телефон %}
+                            +7{{ организация.Телефон }}
+                        {% endif %}</td>
                     <td>{{ организация.Email }}</td>
                     <td>
                         <form method="post" action="{% url 'delete_organisation' организация.id %}">
@@ -28,10 +34,13 @@
                     </td>
                 </tr>
             {% empty %}
-                <tr><td colspan="5">Нет организаций</td></tr>
+                <tr><td class="empty_table"  colspan="7">Нет организаций</td></tr>
             {% endfor %}
         </tbody>
-        </table>
+        </table><br>
+        <form action="{% url 'export_organisations' %}">
+            <button type="submit" name="Организации_DOCX">Построить Word-документ</button>
+        </form>
         <h3>Добавление новой организации</h3>
         <form class="account-form" method="post" action="{% url 'organisation_list' %}">
             {% csrf_token %}
@@ -43,7 +52,8 @@
 
             <label>ОГРН:</label><br>
             <input type="text" name="ОГРН"  title="ОГРН должен состоять из 13 цифр" pattern="\d{13}" required><br>
-
+            <label>Телефон (без кода страны):</label><br>
+            <input type="text" name="Телефон" pattern="\d{10}" title="Телефон должен состоять из 10 цифр"><br>
             <label>Email:</label><br>
             <input type="email" name="Email" pattern="[^@]+@[^@]+\.[^@]+" title="Формат: email@example.com"><br><br>
             <button type="submit" name="submit_организация">Добавить организацию</button>
@@ -54,9 +64,9 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>Человек</th>
+                    <th>Слушатель</th>
                     <th>Организация</th>
-                    <th>Должность</th>
+                    <th>Должность в организации</th>
                     <th>Удалить</th>
                 </tr>
             </thead>
@@ -74,7 +84,7 @@
                         </td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="4">Привязки отсутствуют</td></tr>
+                    <tr><td class="empty_table" colspan="4">Привязки отсутствуют</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -97,8 +107,51 @@
                 {% endfor %}
             </select><br>
             <label>Должность:</label><br>
-            <input type="text" name="Должность" required><br><br>
+            <input type="text" name="Должность"  style="width: 400px;" required><br><br>
             <button type="submit" name="submit_привязка">Привязать</button>
         </form>
     </div>
+    <script>
+    document.querySelector('button[name="Организации_DOCX"]').addEventListener('click', function (e) {
+    e.preventDefault();
+
+    const selectedIds = [];
+    document.querySelectorAll('#organisation-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
+        if (checkbox.checked) {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        }
+    });
+    //Если записи не выбраны галочками, будет добавлена вся таблица
+    if (selectedIds.length === 0) {
+        document.querySelectorAll('#organisation-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        });
+    }
+    fetch("{% url 'export_organisations' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify({ ids: selectedIds })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Ошибка при генерации документа!');
+        return res.blob();
+    })
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "Организации.docx";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    })
+    .catch(err => alert(err));
+    });
+    </script>
 {% endblock %}
