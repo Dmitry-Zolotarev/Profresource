@@ -33,9 +33,6 @@ def слушатели_view(request):
         if Слушатели.objects.filter(ИНН=request.POST.get('ИНН')).exists():
             messages.warning(request, "Человек с этим ИНН уже есть в базе данных!")
             error_found = True
-        if Слушатели.objects.filter(Номер_СНИЛС=request.POST.get('Номер_СНИЛС')).exists():
-            messages.warning(request, "Человек с этим СНИЛС уже есть в базе данных!")
-            error_found = True
         if not error_found:
             Слушатели(
                 Фамилия=request.POST.get('Фамилия'),
@@ -159,12 +156,10 @@ def материалы_view(request):
 def организации_view(request):
     if request.method == 'POST':
         if 'submit_организация' in request.POST:
-            if Организации.objects.filter(
-                    Название=request.POST.get('Название'),
-                    ИНН=request.POST.get('ИНН'),
-                    ОГРН=request.POST.get('ОГРН'),
-                ).exists():
-                messages.warning(request, "Эта организация уже есть в базе данных!")
+            if Организации.objects.filter(ИНН=request.POST.get('ИНН')).exists():
+                messages.warning(request, f"Организация с ИНН {request.POST.get('ИНН')} уже есть в базе данных!")
+            elif Организации.objects.filter(ОГРН=request.POST.get('ОГРН')).exists():
+                messages.warning(request, f"Организация с ОГРН {request.POST.get('ОГРН')} уже есть в базе данных!")
             else:
                 Организации.objects.create(
                     Название=request.POST.get('Название'),

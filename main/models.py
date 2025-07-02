@@ -13,8 +13,8 @@ class Организации(models.Model):
     Название = models.CharField(max_length=255, null=False, default="")
     ИНН = models.CharField(max_length=12, blank=True, unique=True)
     ОГРН = models.CharField(max_length=13, blank=True, unique=True)
-    Телефон = models.CharField(max_length=10, blank=True, unique=True, null=True)
-    Email = models.EmailField(blank=True, unique=True, null=True)
+    Телефон = models.CharField(max_length=10, blank=True, null=True)
+    Email = models.EmailField(blank=True, null=True)
 
 class Курсы(models.Model):
     Тип = models.ForeignKey(Типы_курсов, on_delete=models.CASCADE)
@@ -41,7 +41,7 @@ class Слушатели(models.Model):
     Номер_паспорта = models.CharField(max_length=20, blank=True, null=False)
     Гражданство = models.ForeignKey(Страны, on_delete=models.SET_NULL, null=True)
     Номер_СНИЛС = models.CharField(max_length=11, blank=True, null=True)
-    ИНН = models.CharField(max_length=12, blank=True, null=True, unique=True)
+    ИНН = models.CharField(max_length=12, blank=True, null=True)
     Телефон = models.CharField(max_length=10, blank=True, null=True)
     Email = models.EmailField(blank=True, null=True)
 
