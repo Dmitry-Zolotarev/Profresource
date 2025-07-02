@@ -752,9 +752,9 @@ def export_organisations_XLSX(request):
         return JsonResponse({"error": f"Ошибка при генерации таблицы Excel: {str(e)}"}, status=500)
 
 def import_listeners_XLSX(request):
+    listeners_count = Слушатели.objects.all().count()
     if request.method == 'POST' and request.FILES.get('excel_file'):
         excel_file = request.FILES['excel_file']
-        imported_count = 0
         try:
             wb = openpyxl.load_workbook(excel_file)
             sheet = wb.active
@@ -794,8 +794,7 @@ def import_listeners_XLSX(request):
                         Телефон=телефон or '',
                         Email=email or ''
                     )
-                    imported_count += 1
-            if imported_count == 0:
+            if listeners_count == Слушатели.objects.all().count():
                 messages.warning(request, "Из таблицы Excel не было добавлено новых данных.")
             else:
                 messages.success(request, f"Успешно добавлены новые данные.")
@@ -806,8 +805,8 @@ def import_listeners_XLSX(request):
 
 
 def import_groups_XLSX(request):
-    group_size = Группы.objects.count()
-    group_link_size = Человек_группа.objects.count()
+    groups_count = Группы.objects.all().count()
+    group_links_count = Человек_группа.objects.all().count()
     if request.method == "POST" and request.FILES.get("excel_file"):
         try:
             file = request.FILES["excel_file"]
@@ -872,7 +871,7 @@ def import_groups_XLSX(request):
                     Группа=группа,
                     Статус=статус
                 )
-            if group_size == Группы.objects.count() and group_link_size == Человек_группа.objects.count():
+            if groups_count == Группы.objects.all().count() and group_links_count == Человек_группа.objects.all().count():
                 messages.warning(request, "Из таблицы Excel не было добавлено новых данных.")
             else:
                 messages.success(request, "Успешно добавлены новые данные.")
@@ -883,8 +882,8 @@ def import_groups_XLSX(request):
             )
     return JsonResponse({"error": "Файл не был загружен."}, status=400)
 
-
 def import_courses_XLSX(request):
+    courses_count = Курсы.objects.all().count()
     if request.method == 'POST' and request.FILES.get('excel_file'):
         excel_file = request.FILES['excel_file']
         imported_count = 0
@@ -902,8 +901,7 @@ def import_courses_XLSX(request):
                         Тип=тип,
                         Объём_часов=число_часов
                     )
-                    imported_count += 1
-            if imported_count == 0:
+            if courses_count == Курсы.objects.all().count():
                 messages.warning(request, "Из таблицы Excel не было добавлено новых данных.")
             else:
                 messages.success(request, f"Успешно добавлены новые данные.")
@@ -912,6 +910,8 @@ def import_courses_XLSX(request):
     return redirect('course_list')
 
 def import_organisations_XLSX(request):
+    organisations_count = Группы.objects.all().count()
+    organisation_links_count = Человек_группа.objects.all().count()
     if request.method == "POST" and request.FILES.get("excel_file"):
         try:
             file = request.FILES["excel_file"]
@@ -971,8 +971,7 @@ def import_organisations_XLSX(request):
                     Организация=организация,
                     defaults={"Должность": должность}
                 )
-                imported_count += 1
-            if imported_count == 0:
+            if organisations_count == Организации.objects.all().count() and organisation_links_count == Человек_организация.objects.all().count():
                 messages.warning(request, "Из таблицы Excel не было добавлено новых данных.")
             else:
                 messages.success(request, f"Успешно добавлены новые данные.")
