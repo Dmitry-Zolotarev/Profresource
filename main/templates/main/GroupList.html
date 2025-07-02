@@ -80,7 +80,7 @@
                 <button type="submit" name="Группы_DOCX">Построить Word-документ</button>
             </form>
             <form action="{% url 'export_groups_XLSX' %}">
-                <button type="submit" name="Группы_XLSX">Сохранить таблицу в Excel</button>
+                <button type="submit" name="Группы_XLSX">Сохранить данные в таблицу Excel</button>
             </form>
             <form id="import-form" action="{% url 'import_groups_XLSX' %}" method="post" enctype="multipart/form-data" style="display: none;">
                 {% csrf_token %}
