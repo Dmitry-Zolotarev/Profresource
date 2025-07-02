@@ -44,8 +44,7 @@
                     </td>
                     <td>{{ слушатель.Email }}</td>
                     <td>
-                        <form method="post" action="{% url 'delete_listener' слушатель.id %}">
-                            {% csrf_token %}
+                        <form action="{% url 'delete_listener' слушатель.id %}">
                             <button title="Удалить запись" type="submit" class="delete-button"
                                onclick="return confirm('Удалить эту запись?');">X</button>
                         </form>
@@ -54,12 +53,20 @@
              {% endfor %}
         </tbody>
     </table><br>
-    <form method="post" action="{% url 'export_courses' %}">
-            {% csrf_token %}
+    <div class="doc-panel">
+        <form action="{% url 'export_listeners_DOCX' %}">
             <button type="submit" name="Слушатели_DOCX">Построить Word-документ</button>
-    </form>
+        </form>
+        <form action="{% url 'export_listeners_XLSX' %}">
+            <button type="submit" name="Слушатели_XLSX">Сохранить таблицу в Excel</button>
+        </form>
+        <form id="import-form" action="{% url 'import_listeners_XLSX' %}" method="post" enctype="multipart/form-data" style="display: none;">
+            {% csrf_token %}
+            <input id="file-input" type="file" name="excel_file" accept=".xlsx" required onchange="document.getElementById('import-form').submit();">
+        </form>
+        <button type="button" onclick="document.getElementById('file-input').click();">Загрузить данные из таблицы Excel</button>
+    </div>
     <h3>Добавление нового слушателя</h3>
-
     <form class="account-form" method="post" action="{% url 'student_list' %}">
         {% csrf_token %}
 
@@ -139,7 +146,7 @@
             throw new Error()
         }
     }
-    fetch("{% url 'export_listeners' %}", {
+    fetch("{% url 'export_listeners_DOCX' %}", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -156,6 +163,51 @@
         const a = document.createElement('a');
         a.href = url;
         a.download = "Слушатели.docx";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    })
+    .catch(err => alert(err));
+    });
+    document.querySelector('button[name="Слушатели_XLSX"]').addEventListener('click', function (e) {
+    e.preventDefault();
+
+    const selectedIds = [];
+    document.querySelectorAll('#listener-table tbody input[type="checkbox"]').forEach((checkbox) => {
+        if (checkbox.checked) {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        }
+    });
+    //Если записи не выбраны галочками, будет добавлена вся таблица
+    if (selectedIds.length === 0) {
+        document.querySelectorAll('#listener-table tbody input[type="checkbox"]').forEach((checkbox) => {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        });
+        if(selectedIds.length === 0) {
+            alert("Нет данных для сохранения в таблицу Excel!")
+            throw new Error()
+        }
+    }
+    fetch("{% url 'export_listeners_XLSX' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify({ ids: selectedIds })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Ошибка при генерации таблицы Excel!');
+        return res.blob();
+    })
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "Слушатели.xlsx";
         document.body.appendChild(a);
         a.click();
         a.remove();

@@ -103,3 +103,9 @@ h2, h3, p {
 label {
     margin: 0;
 }
+.doc-panel {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}

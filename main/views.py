@@ -7,10 +7,16 @@ from django.db.models import F, Q
 import json, re
 from io import BytesIO
 from datetime import date
+from datetime import datetime
 from docx import Document
 from docx.shared import Mm, Pt, Inches
 from docx.enum.section import WD_ORIENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from openpyxl import Workbook
+from openpyxl import load_workbook
+from openpyxl.styles import Alignment, Font
+from openpyxl.utils import get_column_letter
+import openpyxl
 
 from .models import (
     Слушатели, Пол, Группы, Курсы, Типы_курсов,
@@ -151,7 +157,6 @@ def материалы_view(request):
         'курсы': Курсы.objects.all(),
         'типы': Типы_материалов.objects.all(),
     })
-
 # --- Организации ---
 def организации_view(request):
     if request.method == 'POST':
@@ -188,7 +193,7 @@ def организации_view(request):
         'организации': Организации.objects.all(),
         'привязки': Человек_организация.objects.all(),
     })
-@require_http_methods(["POST"])
+
 def delete_listener(request, id):
     listener = get_object_or_404(Слушатели, id=id)
     if Человек_группа.objects.filter(Слушатель=listener).exists() \
@@ -198,8 +203,6 @@ def delete_listener(request, id):
         listener.delete()
     return redirect('student_list')
 
-
-@require_http_methods(["POST"])
 def delete_group(request, id):
     group = get_object_or_404(Группы, id=id)
     if Человек_группа.objects.filter(Группа=group).exists():
@@ -207,15 +210,9 @@ def delete_group(request, id):
     else:
         group.delete()
     return redirect('group_list')
-
-
-@require_http_methods(["POST"])
 def delete_group_linking(request, id):
     get_object_or_404(Человек_группа, id=id).delete()
     return redirect('group_list')
-
-
-@require_http_methods(["POST"])
 def delete_course(request, id):
     course = get_object_or_404(Курсы, id=id)
     if Группы.objects.filter(Курс=course).exists() \
@@ -225,7 +222,6 @@ def delete_course(request, id):
         course.delete()
     return redirect('course_list')
 
-@require_http_methods(["POST"])
 def delete_country(request, id):
     country = get_object_or_404(Страны, id=id)
     if Слушатели.objects.filter(Гражданство=country).exists():
@@ -234,13 +230,10 @@ def delete_country(request, id):
         country.delete()
     return redirect('country_list')
 
-@require_http_methods(["POST"])
 def delete_material(request, id):
     get_object_or_404(Материалы_курсов, id=id).delete()
     return redirect('material_list')
 
-
-@require_http_methods(["POST"])
 def delete_organisation(request, id):
     org = get_object_or_404(Организации, id=id)
     if Человек_организация.objects.filter(Организация=org).exists():
@@ -249,7 +242,6 @@ def delete_organisation(request, id):
         org.delete()
     return redirect('organisation_list')
 
-@require_http_methods(["POST"])
 def delete_org_linking(request, id):
     get_object_or_404(Человек_организация, id=id).delete()
     return redirect('organisation_list')
@@ -258,8 +250,7 @@ def today_date():
     month = Месяцы.objects.get(id=date.today().month).Название
     return f"{date.today().day} {month} {date.today().year} г."
 
-@csrf_exempt
-def export_listeners(request):
+def export_listeners_DOCX(request):
     try:
         doc = Document()
         section = doc.sections[0]
@@ -326,7 +317,7 @@ def export_listeners(request):
                         run.font.name = 'Times New Roman'
                         run.font.size = Pt(12)
 
-        director = doc.add_paragraph("Директор" + (' ' * 50) +"В.Н. Котлов")
+        director = doc.add_paragraph("\nДиректор" + (' ' * 50) +"В.Н. Котлов")
         director.alignment = WD_ALIGN_PARAGRAPH.CENTER
         director.runs[0].font.name = 'Times New Roman'
         director.runs[0].font.size = Pt(14)
@@ -344,8 +335,7 @@ def export_listeners(request):
 
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
-@csrf_exempt
-def export_groups(request):
+def export_groups_DOCX(request):
     try:
         doc = Document()
         section = doc.sections[0]
@@ -425,9 +415,7 @@ def export_groups(request):
                     run = paragraph.add_run(text)
                     run.font.name = 'Times New Roman'
                     run.font.size = Pt(12)
-                doc.add_paragraph()
-
-        director = doc.add_paragraph("Директор" + (' ' * 50) + "В.Н. Котлов")
+        director = doc.add_paragraph("\nДиректор" + (' ' * 50) + "В.Н. Котлов")
         director.alignment = WD_ALIGN_PARAGRAPH.CENTER
         director.runs[0].font.name = 'Times New Roman'
         director.runs[0].font.size = Pt(14)
@@ -442,8 +430,7 @@ def export_groups(request):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
-@csrf_exempt
-def export_courses(request):
+def export_courses_DOCX(request):
     try:
         doc = Document()
         section = doc.sections[0]
@@ -499,8 +486,7 @@ def export_courses(request):
                     for run in paragraph.runs:
                         run.font.name = 'Times New Roman'
                         run.font.size = Pt(12)
-
-        director = doc.add_paragraph("Директор" + (' ' * 50) + "В.Н. Котлов")
+        director = doc.add_paragraph("\nДиректор" + (' ' * 50) + "В.Н. Котлов")
         director.alignment = WD_ALIGN_PARAGRAPH.CENTER
         director.runs[0].font.name = 'Times New Roman'
         director.runs[0].font.size = Pt(14)
@@ -519,8 +505,7 @@ def export_courses(request):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
-@csrf_exempt
-def export_organisations(request):
+def export_organisations_DOCX(request):
     try:
         doc = Document()
         section = doc.sections[0]
@@ -599,9 +584,7 @@ def export_organisations(request):
                     run = paragraph.add_run(text)
                     run.font.name = 'Times New Roman'
                     run.font.size = Pt(12)
-            doc.add_paragraph()
-
-        director = doc.add_paragraph("Директор" + (' ' * 50) + "В.Н. Котлов")
+        director = doc.add_paragraph("\nДиректор" + (' ' * 50) + "В.Н. Котлов")
         director.alignment = WD_ALIGN_PARAGRAPH.CENTER
         director.runs[0].font.name = 'Times New Roman'
         director.runs[0].font.size = Pt(14)
@@ -615,3 +598,388 @@ def export_organisations(request):
         return response
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+def export_listeners_XLSX(request):
+    try:
+        # Создание Excel-файла
+        wb = Workbook()
+        ws = wb.active
+        # Заголовки
+        ws.append([
+            "Фамилия", "Имя", "Отчество", "Дата рождения", "Пол", "Гражданство",
+            "Серия паспорта", "Номер паспорта", "ИНН", "СНИЛС", "Телефон", "Email"
+        ])
+        # Данные
+        for слушатель in Слушатели.objects.all():
+            ws.append([
+                слушатель.Фамилия,
+                слушатель.Имя,
+                слушатель.Отчество or "",
+                слушатель.Дата_рождения.strftime("%d.%m.%Y") if слушатель.Дата_рождения else "",
+                слушатель.Пол.Название if слушатель.Пол else "",
+                слушатель.Гражданство.Краткое_название if слушатель.Гражданство else "",
+                слушатель.Серия_паспорта or "",
+                слушатель.Номер_паспорта or "",
+                слушатель.ИНН or "",
+                слушатель.Номер_СНИЛС or "",
+                слушатель.Телефон or "",
+                слушатель.Email or ""
+            ])
+            # Автоширина колонок
+            for col in ws.columns:
+                max_length = max(len(str(cell.value)) if cell.value else 0 for cell in col)
+                ws.column_dimensions[get_column_letter(col[0].column)].width = max_length + 2
+        # Отправка ответа
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response["Content-Disposition"] = 'attachment; filename="Слушатели.xlsx"'
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        response.write(output.read())
+        return response
+    except Exception as e:
+        return JsonResponse({"error": f"Ошибка при генерации Excel: {str(e)}"}, status=500)  # Уберите, если у вас работает CSRF через заголовки
+def export_courses_XLSX(request):
+    try:
+        # Создание Excel-файла
+        wb = Workbook()
+        ws = wb.active
+        # Заголовки
+        ws.append(["Название курса", "Тип", "Количество часов"])
+        # Данные
+        for курс in Курсы.objects.all():
+            ws.append([
+                курс.Название,
+                курс.Тип.Название,
+                курс.Объём_часов
+            ])
+            # Автоширина колонок
+            for col in ws.columns:
+                max_length = max(len(str(cell.value)) if cell.value else 0 for cell in col)
+                ws.column_dimensions[get_column_letter(col[0].column)].width = max_length + 2
+        # Отправка ответа
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response["Content-Disposition"] = 'attachment; filename="Курсы.xlsx"'
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        response.write(output.read())
+        return response
+    except Exception as e:
+        return JsonResponse({"error": f"Ошибка при генерации таблицы Excel: {str(e)}"}, status=500)
+def export_groups_XLSX(request):
+    try:
+        # Создание Excel-файла
+        wb = Workbook()
+        ws = wb.active
+        # Заголовки
+        ws.append( [ "Слушатель", "Статус", "Группа", "Курс", "Тип курса", "Дата начала курса", "Дата окончания курса"])
+        # Данные
+        for чел_группа in Человек_группа.objects.all():
+            ws.append([
+                f"{чел_группа.Слушатель.Фамилия} {чел_группа.Слушатель.Имя} {чел_группа.Слушатель.Отчество or ''} (ИНН: {чел_группа.Слушатель.ИНН})",
+                чел_группа.Статус.Название,
+                чел_группа.Группа_id,
+                чел_группа.Группа.Курс.Название,
+                чел_группа.Группа.Курс.Тип.Название,
+                чел_группа.Группа.Дата_начала_курса.strftime("%d.%m.%Y"),
+                чел_группа.Группа.Дата_окончания_курса.strftime("%d.%m.%Y")
+            ])
+        # Автоширина колонок (после заполнения)
+        for column_cells in ws.columns:
+            length = max(len(str(cell.value)) if cell.value else 0 for cell in column_cells)
+            column_letter = get_column_letter(column_cells[0].column)
+            ws.column_dimensions[column_letter].width = length + 2
+        # Ответ пользователю
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response["Content-Disposition"] = 'attachment; filename="Группы.xlsx"'
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        response.write(output.read())
+        return response
+    except Exception as e:
+        return JsonResponse({"error": f"Ошибка при генерации  таблицы Excel: {str(e)}"}, status=500)
+
+def export_organisations_XLSX(request):
+    try:
+        # Создание Excel-файла
+        wb = Workbook()
+        ws = wb.active
+        # Заголовки
+        ws.append([
+            "Сотрудник", "Должность", "Название организации", "ИНН организации",
+            "ОГРН организации", "Телефон организации", "Email организации"
+        ])
+        # Данные
+        for чел_орг in Человек_организация.objects.all():
+            ws.append([
+                f"{чел_орг.Слушатель.Фамилия} {чел_орг.Слушатель.Имя} {чел_орг.Слушатель.Отчество or ''} (ИНН: {чел_орг.Слушатель.ИНН})",
+                чел_орг.Должность,
+                чел_орг.Организация.Название,
+                чел_орг.Организация.ИНН,
+                чел_орг.Организация.ОГРН,
+                чел_орг.Организация.Телефон or '',
+                чел_орг.Организация.Email or '',
+            ])
+
+        # Автоширина колонок (после заполнения)
+        for column_cells in ws.columns:
+            length = max(len(str(cell.value)) if cell.value else 0 for cell in column_cells)
+            column_letter = get_column_letter(column_cells[0].column)
+            ws.column_dimensions[column_letter].width = length + 2
+
+        # Ответ пользователю
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response["Content-Disposition"] = 'attachment; filename="Сотрудники организаций.xlsx"'
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        response.write(output.read())
+        return response
+    except Exception as e:
+        return JsonResponse({"error": f"Ошибка при генерации таблицы Excel: {str(e)}"}, status=500)
+
+def import_listeners_XLSX(request):
+    if request.method == 'POST' and request.FILES.get('excel_file'):
+        excel_file = request.FILES['excel_file']
+        imported_count = 0
+        try:
+            wb = openpyxl.load_workbook(excel_file)
+            sheet = wb.active
+
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                фамилия, имя, отчество, дата_рождения, пол, гражданство, серия, номер_паспорта, инн, снилс, телефон, email = row[:12]
+                пол = Пол.objects.filter(Название__iexact=пол).first()
+                гражданство = Страны.objects.filter(Краткое_название__iexact=гражданство).first()
+                try:
+                    # Преобразуем строку даты в объект date
+                    if isinstance(дата_рождения, str):
+                        дата_рождения = datetime.strptime(дата_рождения, '%d.%m.%Y').date()
+                except Exception:
+                    messages.error(request, f"Ошибка формата даты рождения: {дата_рождения}")
+                    continue
+                # Проверка: существует ли такой слушатель по уникальному набору полей (ИНН или паспорт)
+                if Слушатели.objects.filter(
+                    Фамилия=фамилия,
+                    Имя=имя,
+                    Отчество=отчество,
+                    Дата_рождения=дата_рождения,
+                    ИНН=инн
+                ).exists():
+                    continue
+                if фамилия and имя and дата_рождения and пол and гражданство and номер_паспорта and инн:
+                    Слушатели.objects.create(
+                        Фамилия=фамилия,
+                        Имя=имя,
+                        Отчество=отчество,
+                        Дата_рождения=дата_рождения,
+                        Пол=пол,
+                        Гражданство=гражданство,
+                        Серия_паспорта=серия or '',
+                        Номер_паспорта=номер_паспорта,
+                        ИНН=инн,
+                        Номер_СНИЛС=снилс or '',
+                        Телефон=телефон or '',
+                        Email=email or ''
+                    )
+                    imported_count += 1
+            if imported_count == 0:
+                messages.warning(request, "Из таблицы Excel не было добавлено новых данных.")
+            else:
+                messages.success(request, f"Успешно добавлены новые данные.")
+        except Exception as e:
+            messages.error(request, f"Ошибка при открытии таблицы Excel: {e}")
+    return redirect('student_list')
+@csrf_exempt
+
+
+def import_groups_XLSX(request):
+    group_size = Группы.objects.count()
+    group_link_size = Человек_группа.objects.count()
+    if request.method == "POST" and request.FILES.get("excel_file"):
+        try:
+            file = request.FILES["excel_file"]
+            wb = openpyxl.load_workbook(file)
+            ws = wb.active
+
+            rows = list(ws.iter_rows(min_row=2, values_only=True))  # Пропускаем заголовок
+            for row in rows:
+                (
+                    слушатель,
+                    статус,
+                    группа_id,
+                    курс,
+                    тип_курса,
+                    дата_начала,
+                    дата_окончания,
+                ) = row
+                try:
+                    # Преобразуем строку даты в объект date
+                    if isinstance(дата_начала, str) and isinstance(дата_окончания, str):
+                        дата_начала = datetime.strptime(дата_начала, '%d.%m.%Y').date()
+                        дата_окончания = datetime.strptime(дата_окончания, '%d.%m.%Y').date()
+                except Exception:
+                    messages.error(request, "Ошибка формата дат")
+                    continue
+
+                if "(ИНН:" not in слушатель:
+                    continue  # пропускаем строку с неправильным форматом
+
+                фио, инн = слушатель.split("(ИНН:")
+                фио_parts = фио.strip().split()
+                фамилия = фио_parts[0]
+                имя = фио_parts[1] if len(фио_parts) > 1 else ""
+                отчество = фио_parts[2] if len(фио_parts) > 2 else ""
+
+                инн = инн.strip(") ").strip()
+                курс = Курсы.objects.filter(Название=курс).first()
+                статус = Статусы.objects.filter(Название=статус).first()
+                try:
+                    слушатель, _ = Слушатели.objects.get_or_create(
+                        ИНН=инн,
+                        defaults={
+                            "Фамилия": фамилия,
+                            "Имя": имя,
+                            "Отчество": отчество,
+                        },
+                    )
+                except Exception:
+                    continue
+                # --- Получение или создание группы ---
+                группа, _ = Группы.objects.get_or_create(
+                    id=группа_id,
+                    defaults={
+                        "Курс": курс,
+                        "Дата_начала_курса": дата_начала,
+                        "Дата_окончания_курса": дата_окончания,
+                    },
+                )
+                # --- Добавляем привязку ---
+                Человек_группа.objects.get_or_create(
+                    Слушатель=слушатель,
+                    Группа=группа,
+                    Статус=статус
+                )
+            if group_size == Группы.objects.count() and group_link_size == Человек_группа.objects.count():
+                messages.warning(request, "Из таблицы Excel не было добавлено новых данных.")
+            else:
+                messages.success(request, "Успешно добавлены новые данные.")
+            return redirect("group_list")  # редирект обратно на страницу
+        except Exception as e:
+            return JsonResponse(
+                {"error": f"Ошибка при импорте из Excel: {str(e)}"}, status=400
+            )
+    return JsonResponse({"error": "Файл не был загружен."}, status=400)
+
+
+def import_courses_XLSX(request):
+    if request.method == 'POST' and request.FILES.get('excel_file'):
+        excel_file = request.FILES['excel_file']
+        imported_count = 0
+        try:
+            wb = openpyxl.load_workbook(excel_file)
+            sheet = wb.active
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                название, тип, число_часов = row[:3]
+                тип = Типы_курсов.objects.filter(Название__iexact=тип).first()
+                # Проверка: существует ли такой слушатель по уникальному набору полей (ИНН или паспорт)
+                if Курсы.objects.filter( Название=название, Тип=тип, ).exists(): continue
+                if название and тип and число_часов:
+                    Курсы.objects.create(
+                        Название=название,
+                        Тип=тип,
+                        Объём_часов=число_часов
+                    )
+                    imported_count += 1
+            if imported_count == 0:
+                messages.warning(request, "Из таблицы Excel не было добавлено новых данных.")
+            else:
+                messages.success(request, f"Успешно добавлены новые данные.")
+        except Exception as e:
+            messages.error(request, f"Ошибка при открытии таблицы Excel: {e}")
+    return redirect('course_list')
+
+def import_organisations_XLSX(request):
+    if request.method == "POST" and request.FILES.get("excel_file"):
+        try:
+            file = request.FILES["excel_file"]
+            wb = openpyxl.load_workbook(file)
+            imported_count = 0
+            ws = wb.active
+
+            rows = list(ws.iter_rows(min_row=2, values_only=True))  # Пропускаем заголовок
+            for row in rows:
+                (
+                    сотрудник_str,
+                    должность,
+                    название_организации,
+                    инн_организации,
+                    огрн,
+                    телефон,
+                    email,
+                ) = row
+
+                # --- Парсинг сотрудника ---
+                # Формат: "Иванов Иван Иванович (ИНН: 1234567890)"
+                if "(ИНН:" not in сотрудник_str:
+                    continue  # пропускаем строку с неправильным форматом
+
+                фио, инн = сотрудник_str.split("(ИНН:")
+                фио_parts = фио.strip().split()
+                фамилия = фио_parts[0]
+                имя = фио_parts[1] if len(фио_parts) > 1 else ""
+                отчество = фио_parts[2] if len(фио_parts) > 2 else ""
+
+                инн = инн.strip(") ").strip()
+
+                try:
+                    слушатель, _ = Слушатели.objects.get_or_create(
+                        ИНН=инн,
+                        defaults={
+                            "Фамилия": фамилия,
+                            "Имя": имя,
+                            "Отчество": отчество,
+                        },
+                    )
+                except Exception:
+                    continue
+                # --- Получение или создание организации ---
+                организация, _ = Организации.objects.get_or_create(
+                    ИНН=инн_организации,
+                    defaults={
+                        "Название": название_организации,
+                        "ОГРН": огрн,
+                        "Телефон": телефон,
+                        "Email": email,
+                    },
+                )
+                # --- Добавляем привязку ---
+                Человек_организация.objects.get_or_create(
+                    Слушатель=слушатель,
+                    Организация=организация,
+                    defaults={"Должность": должность}
+                )
+                imported_count += 1
+            if imported_count == 0:
+                messages.warning(request, "Из таблицы Excel не было добавлено новых данных.")
+            else:
+                messages.success(request, f"Успешно добавлены новые данные.")
+            return redirect("organisation_list")  # редирект обратно на страницу
+        except Exception as e:
+            return JsonResponse(
+                {"error": f"Ошибка при импорте из Excel: {str(e)}"}, status=400
+            )
+    return JsonResponse({"error": "Файл не был загружен."}, status=400)
+

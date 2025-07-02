@@ -22,8 +22,7 @@
                         <td>{{ курс.Тип.Название }}</td>
                         <td>{{ курс.Объём_часов }}</td>
                         <td>
-                            <form method="post" action="{% url 'delete_course' курс.id %}">
-                                {% csrf_token %}
+                            <form action="{% url 'delete_course' курс.id %}">
                                 <button type="submit" class="delete-button" onclick="return confirm('Удалить эту запись?');">X</button>
                             </form>
                         </td>
@@ -31,10 +30,20 @@
                  {% endfor %}
             </tbody>
         </table><br>
-        <form method="post" action="{% url 'export_courses' %}">
-            {% csrf_token %}
-            <button type="submit" name="Курсы_DOCX">Построить Word-документ</button>
-        </form>
+        <div class="doc-panel">
+            <form action="{% url 'export_courses_DOCX' %}">
+                <button type="submit" name="Курсы_DOCX">Построить Word-документ</button>
+            </form>
+            <form action="{% url 'export_courses_XLSX' %}">
+                <button type="submit" name="Курсы_XLSX">Сохранить таблицу в Excel</button>
+            </form>
+            <form id="import-form" action="{% url 'import_courses_XLSX' %}" method="post" enctype="multipart/form-data" style="display: none;">
+                {% csrf_token %}
+                <input id="file-input" type="file" name="excel_file" accept=".xlsx" required onchange="document.getElementById('import-form').submit();">
+            </form>
+            <button type="button" onclick="document.getElementById('file-input').click();">Загрузить данные из таблицы Excel</button>
+        </div>
+
         <h3>Добавление нового курса</h3>
         <form class="account-form" method="post" action="{% url 'course_list' %}">
             {% csrf_token %}
@@ -83,7 +92,7 @@
             throw new Error()
         }
     }
-    fetch("{% url 'export_courses' %}", {
+    fetch("{% url 'export_courses_DOCX' %}", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -101,6 +110,52 @@
         const a = document.createElement('a');
         a.href = url;
         a.download = "Курсы.docx";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    })
+    .catch(err => alert(err));
+    });
+    document.querySelector('button[name="Курсы_XLSX"]').addEventListener('click', function (e) {
+    e.preventDefault();
+
+    const selectedIds = [];
+    document.querySelectorAll('#course-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
+        if (checkbox.checked) {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        }
+    });
+    //Если записи не выбраны галочками, будет добавлена вся таблица
+    if (selectedIds.length === 0) {
+        document.querySelectorAll('#course-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        });
+        if(selectedIds.length === 0) {
+            alert("Нет данных для сохранения таблицу Excel!")
+            throw new Error()
+        }
+    }
+    fetch("{% url 'export_courses_XLSX' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify({ ids: selectedIds })
+    })
+    .then(res => {
+        if (!res.ok)  throw new Error('Ошибка при генерации таблицы Excel!');
+
+        return res.blob();
+    })
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "Курсы.xlsx";
         document.body.appendChild(a);
         a.click();
         a.remove();

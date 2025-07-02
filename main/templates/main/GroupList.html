@@ -23,18 +23,14 @@
                         <td>{{ группа.Дата_начала_курса|date:"d.m.Y" }}</td>
                         <td>{{ группа.Дата_окончания_курса|date:"d.m.Y" }}</td>
                         <td>
-                            <form method="post" action="{% url 'delete_group' группа.id %}">
-                                {% csrf_token %}
+                            <form action="{% url 'delete_group' группа.id %}">
                                 <button type="submit" class="delete-button" onclick="return confirm('Удалить эту запись?');">X</button>
                             </form>
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
-        </table><br>
-        <form action="{% url 'export_groups' %}">
-            <button type="submit" name="Группы_DOCX">Построить Word-документ</button>
-        </form>
+        </table>
         <h3>Добавление новой группы</h3>
         <form class="account-form" method="post" action="{% url 'group_list' %}">
             {% csrf_token %}
@@ -55,7 +51,7 @@
     </div>
     <h3>Привязка слушателей к группам</h3>
     <div>
-        <table class="table" id="group-linking-table"
+        <table class="table" id="group-linking-table">
             <thead>
                 <tr>
                     <th>Слушатель</th>
@@ -67,21 +63,31 @@
             <tbody>
                 {% for чел_группа in Человек_группа %}
                     <tr>
-
                         <td>{{ чел_группа.Слушатель.Фамилия }} {{ чел_группа.Слушатель.Имя }} {{ чел_группа.Слушатель.Отчество }} (ИНН: {{ чел_группа.Слушатель.ИНН }})</td>
                         <td>№{{ чел_группа.Группа.id }} ({{ чел_группа.Группа.Курс.Название }} - {{ чел_группа.Группа.Курс.Тип.Название }})</td>
                         <td>{{ чел_группа.Статус.Название }}</td>
                         <td>
-                            <form method="post" action="{% url 'delete_group_linking' чел_группа.id %}">
-                                {% csrf_token %}
+                            <form action="{% url 'delete_group_linking' чел_группа.id %}">
                                 <button type="submit" class="delete-button" onclick="return confirm('Удалить привязку?');">X</button>
                             </form>
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
-        </table>
-
+        </table><br>
+        <div class="doc-panel">
+            <form action="{% url 'export_groups_DOCX' %}">
+                <button type="submit" name="Группы_DOCX">Построить Word-документ</button>
+            </form>
+            <form action="{% url 'export_groups_XLSX' %}">
+                <button type="submit" name="Группы_XLSX">Сохранить таблицу в Excel</button>
+            </form>
+            <form id="import-form" action="{% url 'import_groups_XLSX' %}" method="post" enctype="multipart/form-data" style="display: none;">
+                {% csrf_token %}
+                <input id="file-input" type="file" name="excel_file" accept=".xlsx" required onchange="document.getElementById('import-form').submit();">
+            </form>
+            <button type="button" onclick="document.getElementById('file-input').click();">Загрузить данные из таблицы Excel</button>
+        </div>
         <h3>Добавить привязку</h3>
         <form class="account-form" method="post" action="{% url 'group_list' %}">
             {% csrf_token %}
@@ -145,7 +151,7 @@
             throw new Error()
         }
     }
-    fetch("{% url 'export_groups' %}", {
+    fetch("{% url 'export_groups_DOCX' %}", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -162,6 +168,50 @@
         const a = document.createElement('a');
         a.href = url;
         a.download = "Группы.docx";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    })
+    .catch(err => alert(err));
+    });
+    document.querySelector('button[name="Группы_XLSX"]').addEventListener('click', function (e) {
+    e.preventDefault();
+    const selectedIds = [];
+    document.querySelectorAll('#group-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
+        if (checkbox.checked) {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        }
+    });
+    //Если записи не выбраны галочками, будет добавлена вся таблица
+    if (selectedIds.length === 0) {
+        document.querySelectorAll('#group-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        });
+        if(selectedIds.length === 0) {
+            alert("Нет данных для сохранения в таблицу Excel!")
+            throw new Error()
+        }
+    }
+    fetch("{% url 'export_groups_XLSX' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify({ ids: selectedIds })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Ошибка при генерации таблицы Excel!');
+        return res.blob();
+    })
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "Группы.xlsx";
         document.body.appendChild(a);
         a.click();
         a.remove();
