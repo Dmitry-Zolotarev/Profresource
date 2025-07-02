@@ -140,6 +140,10 @@
             const id = checkbox.closest('tr').dataset.id;
             if (id) selectedIds.push(id);
         });
+        if(selectedIds.length === 0) {
+            alert("Нет данных для сохранения в документ!")
+            throw new Error()
+        }
     }
     fetch("{% url 'export_groups' %}", {
         method: "POST",

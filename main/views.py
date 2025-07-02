@@ -6,19 +6,18 @@ from django.http import JsonResponse, HttpResponse
 from django.db.models import F, Q
 import json, re
 from io import BytesIO
-
+from datetime import date
 from docx import Document
 from docx.shared import Mm, Pt, Inches
 from docx.enum.section import WD_ORIENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from .models import (
-    Слушатели, Страны, Пол, Группы, Курсы, Типы_курсов,
+    Слушатели, Пол, Группы, Курсы, Типы_курсов,
     Материалы_курсов, Типы_материалов,
     Организации, Человек_группа, Человек_организация,
-    Статусы
+    Статусы, Месяцы, Страны
 )
-
 
 def слушатели_view(request):
     if request.method == 'POST':
@@ -114,7 +113,23 @@ def курсы_view(request):
         'типы_курсов': Типы_курсов.objects.all(),
         'курсы': Курсы.objects.all(),
     })
-
+def страны_view(request):
+    if request.method == 'POST':
+        if Страны.objects.filter(
+                Краткое_название=request.POST.get('Краткое_название'),
+                Телефонный_код=request.POST.get('Телефонный_код'),
+        ).exists():
+            messages.warning(request, "Такой курс уже есть в базе данных!")
+        else:
+            Страны.objects.create(
+                Название=request.POST.get('Название'),
+                Краткое_название=request.POST.get('Краткое_название'),
+                Телефонный_код=request.POST.get('Телефонный_код'),
+            )
+            return redirect('country_list')
+    return render(request, 'main/CountryList.html', {
+        'страны': Страны.objects.all(),
+    })
 
 # --- Материалы ---
 def материалы_view(request):
@@ -215,6 +230,14 @@ def delete_course(request, id):
         course.delete()
     return redirect('course_list')
 
+@require_http_methods(["POST"])
+def delete_country(request, id):
+    country = get_object_or_404(Страны, id=id)
+    if Слушатели.objects.filter(Гражданство=country).exists():
+        messages.error(request, "Удаление отменено — есть зависимые записи!")
+    else:
+        country.delete()
+    return redirect('country_list')
 
 @require_http_methods(["POST"])
 def delete_material(request, id):
@@ -235,6 +258,11 @@ def delete_organisation(request, id):
 def delete_org_linking(request, id):
     get_object_or_404(Человек_организация, id=id).delete()
     return redirect('organisation_list')
+
+def today_date():
+    month = Месяцы.objects.get(id=date.today().month).Название
+    return f"{date.today().day} {month} {date.today().year} г."
+
 @csrf_exempt
 def export_listeners(request):
     try:
@@ -259,6 +287,11 @@ def export_listeners(request):
         run.font.name = 'Times New Roman'
         run.font.size = Pt(14)
         run.bold = True
+
+        date = doc.add_paragraph("Отчёт от " + today_date())
+        date.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        date.runs[0].font.name = 'Times New Roman'
+        date.runs[0].font.size = Pt(14)
 
         heading = doc.add_paragraph("Слушатели")
         heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -298,11 +331,10 @@ def export_listeners(request):
                         run.font.name = 'Times New Roman'
                         run.font.size = Pt(12)
 
-        heading = doc.add_paragraph("\nДиректор" + (' ' * 50) +"В.Н. Котлов")
-        heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        heading.runs[0].font.name = 'Times New Roman'
-        heading.runs[0].font.size = Pt(14)
-
+        director = doc.add_paragraph("Директор" + (' ' * 50) +"В.Н. Котлов")
+        director.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        director.runs[0].font.name = 'Times New Roman'
+        director.runs[0].font.size = Pt(14)
         # Сохранение и ответ
         buf = BytesIO()
         doc.save(buf)
@@ -339,6 +371,11 @@ def export_groups(request):
         run.font.name = 'Times New Roman'
         run.font.size = Pt(14)
         run.bold = True
+
+        date = doc.add_paragraph("Отчёт от " + today_date())
+        date.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        date.runs[0].font.name = 'Times New Roman'
+        date.runs[0].font.size = Pt(14)
 
         heading = doc.add_paragraph("Группы и их состав")
         heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -394,10 +431,11 @@ def export_groups(request):
                     run.font.name = 'Times New Roman'
                     run.font.size = Pt(12)
                 doc.add_paragraph()
-        footer = doc.add_paragraph("Директор" + (' ' * 50) + "В.Н. Котлов")
-        footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        footer.runs[0].font.name = 'Times New Roman'
-        footer.runs[0].font.size = Pt(14)
+
+        director = doc.add_paragraph("Директор" + (' ' * 50) + "В.Н. Котлов")
+        director.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        director.runs[0].font.name = 'Times New Roman'
+        director.runs[0].font.size = Pt(14)
 
         buf = BytesIO()
         doc.save(buf)
@@ -433,6 +471,11 @@ def export_courses(request):
         run.font.size = Pt(14)
         run.bold = True
 
+        date = doc.add_paragraph("Отчёт от " + today_date())
+        date.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        date.runs[0].font.name = 'Times New Roman'
+        date.runs[0].font.size = Pt(14)
+
         heading = doc.add_paragraph("Курсы")
         heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
         heading_run = heading.runs[0]
@@ -462,10 +505,10 @@ def export_courses(request):
                         run.font.name = 'Times New Roman'
                         run.font.size = Pt(12)
 
-        heading = doc.add_paragraph("\nДиректор" + (' ' * 50) + "В.Н. Котлов")
-        heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        heading.runs[0].font.name = 'Times New Roman'
-        heading.runs[0].font.size = Pt(14)
+        director = doc.add_paragraph("Директор" + (' ' * 50) + "В.Н. Котлов")
+        director.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        director.runs[0].font.name = 'Times New Roman'
+        director.runs[0].font.size = Pt(14)
 
         buf = BytesIO()
         doc.save(buf)
@@ -504,6 +547,11 @@ def export_organisations(request):
         run.font.name = 'Times New Roman'
         run.font.size = Pt(14)
         run.bold = True
+
+        date = doc.add_paragraph("Отчёт от " + today_date())
+        date.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        date.runs[0].font.name = 'Times New Roman'
+        date.runs[0].font.size = Pt(14)
 
         heading = doc.add_paragraph("Организации и их сотрудники")
         heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -557,10 +605,11 @@ def export_organisations(request):
                     run.font.name = 'Times New Roman'
                     run.font.size = Pt(12)
             doc.add_paragraph()
-        footer = doc.add_paragraph("Директор" + (' ' * 50) + "В.Н. Котлов")
-        footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        footer.runs[0].font.name = 'Times New Roman'
-        footer.runs[0].font.size = Pt(14)
+
+        director = doc.add_paragraph("Директор" + (' ' * 50) + "В.Н. Котлов")
+        director.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        director.runs[0].font.name = 'Times New Roman'
+        director.runs[0].font.size = Pt(14)
 
         buf = BytesIO()
         doc.save(buf)

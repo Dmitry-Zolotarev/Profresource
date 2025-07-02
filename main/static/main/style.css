@@ -68,11 +68,11 @@ button, select:hover {
 }
 input[type="text"] {
     margin: 0;
-    width: 250px;
+    width: 300px;
 }
 input[type="email"] {
     margin: 0;
-    width: 250px;
+    width: 300px;
 }
 h2, h3, p {
     margin: 10px;

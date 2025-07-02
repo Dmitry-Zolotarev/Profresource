@@ -25,7 +25,9 @@
                     <td>{% if организация.Телефон %}
                             +7{{ организация.Телефон }}
                         {% endif %}</td>
-                    <td>{{ организация.Email }}</td>
+                    <td>{% if организация.Email %}
+                            {{ организация.Email }}
+                        {% endif %}</td></td>
                     <td>
                         <form method="post" action="{% url 'delete_organisation' организация.id %}">
                             {% csrf_token %}
@@ -138,6 +140,10 @@
             const id = checkbox.closest('tr').dataset.id;
             if (id) selectedIds.push(id);
         });
+        if(selectedIds.length === 0) {
+            alert("Нет данных для сохранения в документ!")
+            throw new Error()
+        }
     }
     fetch("{% url 'export_organisations' %}", {
         method: "POST",

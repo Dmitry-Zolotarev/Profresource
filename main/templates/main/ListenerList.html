@@ -37,7 +37,11 @@
                     <td>{{ слушатель.Номер_паспорта }}</td>
                     <td>{{ слушатель.ИНН }}</td>
                     <td>{{ слушатель.Номер_СНИЛС }}</td>
-                    <td>+{{ слушатель.Гражданство.Телефонный_код }}{{ слушатель.Телефон }}</td>
+                    <td>
+                        {% if слушатель.Телефон %}
+                            +{{ слушатель.Гражданство.Телефонный_код }}{{ слушатель.Телефон }}
+                        {% endif %}
+                    </td>
                     <td>{{ слушатель.Email }}</td>
                     <td>
                         <form method="post" action="{% url 'delete_listener' слушатель.id %}">
@@ -79,7 +83,7 @@
         </select><br>
 
         <label>Гражданство:</label><br>
-        <select name="Гражданство">
+        <select name="Гражданство" required>
             {% for страна in страны %}
                 <option value="{{ страна.id }}">{{ страна.Название }}</option>
             {% endfor %}
@@ -98,7 +102,7 @@
         <input type="text" name="Номер_СНИЛС" pattern="\d{3}-\d{3}-\d{3} \d{2}" title="Формат: XXX-XXX-XXX XX"><br>
 
         <label>Телефон (без кода страны):</label><br>
-        <input type="text" name="Телефон" pattern="\d{10}" title="Телефон должен состоять из 10 цифр" required><br>
+        <input type="text" name="Телефон" pattern="\d{10}" title="Телефон должен состоять из 10 цифр"><br>
 
         <label>Email:</label><br>
         <input type="email" name="Email" pattern="[^@]+@[^@]+\.[^@]+" title="Формат: email@example.com" ><br><br>
@@ -130,6 +134,10 @@
             const id = checkbox.closest('tr').dataset.id;
             if (id) selectedIds.push(id);
         });
+        if(selectedIds.length === 0) {
+            alert("Нет данных для сохранения в документ!")
+            throw new Error()
+        }
     }
     fetch("{% url 'export_listeners' %}", {
         method: "POST",

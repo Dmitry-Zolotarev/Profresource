@@ -64,3 +64,5 @@ class Материалы_курсов(models.Model):
     Название = models.CharField(max_length=255, null=False, default="")
     Ссылка_на_материал = models.CharField(max_length=255, null=False, default="about:blank")
 
+class Месяцы(models.Model):
+    Название = models.CharField(max_length=8)
