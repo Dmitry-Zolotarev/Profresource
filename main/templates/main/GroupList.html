@@ -1,124 +1,115 @@
 {% extends 'main/MainMenu.html' %}
 {% block title %}ООО "Профресурс" - группы{% endblock %}
 {% block content %}
-    <h3>Список групп</h3>
-    <div>
-        <table class="table" id = "group-table">
-            <thead>
-                <tr>
-                    <th>Выбор</th>
-                    <th>Номер группы</th>
-                    <th>Курс</th>
-                    <th>Дата начала</th>
-                    <th>Дата окончания</th>
-                    <th>Удалить</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for группа in группы %}
-                    <tr data-id="{{ группа.id }}">
-                        <td><input type="checkbox"></td>
-                        <td>{{ группа.id }}</td>
-                        <td>{{ группа.Курс.Название }} ({{ группа.Курс.Тип.Название }})</td>
-                        <td>{{ группа.Дата_начала_курса|date:"d.m.Y" }}</td>
-                        <td>{{ группа.Дата_окончания_курса|date:"d.m.Y" }}</td>
-                        <td>
-                            <form action="{% url 'delete_group' группа.id %}">
-                                <button type="submit" class="delete-button" onclick="return confirm('Удалить эту запись?');">X</button>
-                            </form>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <h3>Добавление новой группы</h3>
-        <form class="account-form" method="post" action="{% url 'group_list' %}">
-            {% csrf_token %}
-            <label>Курс:</label><br>
-            <select name="Курс" required>
-            {% for курс in курсы %}
-                <option value="{{ курс.id }}">{{ курс.Название }} - {{ курс.Тип.Название }}</option>
+<h3>Список групп</h3>
+<div>
+    <table class="table" id="group-table">
+        <thead>
+            <tr>
+                <th>Выбор</th>
+                <th>Номер группы</th>
+                <th>Курс</th>
+                <th>Удалить</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for группа in группы %}
+            <tr data-id="{{ группа.id }}">
+                <td><input type="checkbox"></td>
+                <td>{{ группа.id }}</td>
+                <td>{{ группа.Курс.Название }} ({{ группа.Курс.Тип.Название }})</td>
+                <td>
+                    <form action="{% url 'delete_group' группа.id %}">
+                        <button type="submit" class="delete-button" onclick="return confirm('Удалить эту запись?');">X</button>
+                    </form>
+                </td>
+            </tr>
             {% endfor %}
-            </select><br>
-            <label>Дата начала курса:</label><br>
-            <input type="date" name="Дата_начала_курса" required><br>
+        </tbody>
+    </table>
 
-            <label>Дата окончания курса:</label><br>
-            <input type="date" name="Дата_окончания_курса" required><br><br>
+    <!-- Форма добавления новой группы -->
+    <h3>Добавление новой группы</h3>
+    <form class="account-form" method="post" action="{% url 'group_list' %}">
+        {% csrf_token %}
+        <label>Курс:</label><br>
+        <select name="Курс" required>
+            {% for курс in курсы %}
+            <option value="{{ курс.id }}">{{ курс.Название }} - {{ курс.Тип.Название }}</option>
+            {% endfor %}
+        </select><br><br>
+        <button type="submit" name="submit_группа">Добавить группу</button>
+    </form>
+</div>
 
-            <button type="submit" name="submit_группа">Добавить группу</button>
-        </form>
-    </div>
-    <h3>Привязка слушателей к группам</h3>
-    <div>
-        <table class="table" id="group-linking-table">
-            <thead>
-                <tr>
-                    <th>Слушатель</th>
-                    <th>Группа</th>
-                    <th>Статус</th>
-                    <th>Удалить</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for чел_группа in Человек_группа %}
-                    <tr>
-                        <td>{{ чел_группа.Слушатель.Фамилия }} {{ чел_группа.Слушатель.Имя }}
-                            {{ чел_группа.Слушатель.Отчество|default_if_none:"" }} (ИНН: {{ чел_группа.Слушатель.ИНН }})</td>
-                        <td>№{{ чел_группа.Группа.id }} ({{ чел_группа.Группа.Курс.Название }} - {{ чел_группа.Группа.Курс.Тип.Название }})</td>
-                        <td>{{ чел_группа.Статус.Название }}</td>
-                        <td>
-                            <form action="{% url 'delete_group_linking' чел_группа.id %}">
-                                <button type="submit" class="delete-button" onclick="return confirm('Удалить привязку?');">X</button>
-                            </form>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table><br>
-        <div class="doc-panel">
-            <form action="{% url 'export_groups_DOCX' %}">
-                <button type="submit" name="Группы_DOCX">Построить Word-документ</button>
-            </form>
-            <form action="{% url 'export_groups_XLSX' %}">
-                <button type="submit" name="Группы_XLSX">Сохранить данные в таблицу Excel</button>
-            </form>
-            <form id="import-form" action="{% url 'import_groups_XLSX' %}" method="post" enctype="multipart/form-data" style="display: none;">
-                {% csrf_token %}
-                <input id="file-input" type="file" name="excel_file" accept=".xlsx" required onchange="document.getElementById('import-form').submit();">
-            </form>
-            <button type="button" onclick="document.getElementById('file-input').click();">Загрузить данные из таблицы Excel</button>
-        </div>
-        <h3>Добавить привязку</h3>
-        <form class="account-form" method="post" action="{% url 'group_list' %}">
+<h3>Привязка слушателей к группам</h3>
+<div>
+    <table class="table" id="group-linking-table">
+        <thead>
+            <tr>
+                <th>Слушатель</th>
+                <th>Группа</th>
+                <th>Статус</th>
+                <th>Удалить</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for чел_группа in Человек_группа %}
+            <tr data-id="{{ чел_группа.id }}">
+                <td>
+                    {{ чел_группа.Слушатель.Фамилия }} {{ чел_группа.Слушатель.Имя }} {{ чел_группа.Слушатель.Отчество|default_if_none:"" }}
+                    (ИНН: {{ чел_группа.Слушатель.ИНН }})
+                </td>
+                <td>№{{ чел_группа.Группа.id }} ({{ чел_группа.Группа.Курс.Название }} - {{ чел_группа.Группа.Курс.Тип.Название }})</td>
+                <td>{{ чел_группа.Статус.Название }}</td>
+                <td>
+                    <form action="{% url 'delete_group_linking' чел_группа.id %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="delete-button" onclick="return confirm('Удалить привязку?');">X</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table><br>
+
+    <div class="doc-panel" data-csrf-token="{{ csrf_token }}">
+        <form id="import-form" action="{% url 'import_groups_XLSX' %}" method="post" enctype="multipart/form-data" style="display: none;">
             {% csrf_token %}
-            <label>Слушатель:</label><br>
-            <select name="Слушатель" required>
-                {% for слушатель in слушатели %}
-                <option value="{{ слушатель.id }}">
-                    {{ слушатель.Фамилия }} {{ слушатель.Имя }}
-                   {{  слушатель.Отчество|default_if_none:"" }} (ИНН: {{ слушатель.ИНН }})
-                </option>
-                {% endfor %}
-            </select><br>
-            <label>Номер группы:</label><br>
-            <select name="Группа" required>
-                {% for группа in группы %}
-                    <option value="{{ группа.id }}"> №{{ группа.id }} ({{ группа.Курс.Название }} - {{ группа.Курс.Тип.Название }})</option>
-                {% endfor %}
-            </select><br>
-            <label>Статус:</label><br>
-            <select name="Статус">
-                {% for статус in статусы %}
-                    <option value="{{ статус.id }}">{{ статус.Название }}</option>
-                {% endfor %}
-            </select><br>
-            <label>Номер протокола:</label><br>
-            <button type="submit" name="submit_привязка">Привязать</button>
+            <input class="doc-button" id="file-input" type="file" name="excel_file" accept=".xlsx" required onchange="document.getElementById('import-form').submit();">
         </form>
+        <button class="doc-button" name="Группы_XLSX">Сохранить данные в таблицу Excel</button>
+        <button type="button" onclick="document.getElementById('file-input').click();">Загрузить данные из таблицы Excel</button>
+        <button class="doc-button" name="Группы_DOCX">Составить ведомость обучения</button>
+    </div><br>
+
+    <div class="doc-panel">
+        <button class="doc-button" name="Удостоверение">Составить удостоверение</button>
+        <button class="doc-button" name="Приказ_зачисл">Составить приказ о зачислении</button>
+        <button class="doc-button" name="Приказ_отчисл">Составить приказ о отчислении</button>
     </div>
-    <script>
-    function filterTable() {
+
+    <h3>Добавить привязку</h3>
+    <form class="account-form" method="post" action="{% url 'group_list' %}">
+        {% csrf_token %}
+        <label>Слушатель:</label><br>
+        <select name="Слушатель" required>
+            {% for слушатель in слушатели %}
+            <option value="{{ слушатель.id }}">{{ слушатель.Фамилия }} {{ слушатель.Имя }} {{ слушатель.Отчество|default_if_none:"" }} (ИНН: {{ слушатель.ИНН }})</option>
+            {% endfor %}
+        </select><br>
+        <label>Номер группы:</label><br>
+        <select name="Группа" required>
+            {% for группа in группы %}
+            <option value="{{ группа.id }}">№{{ группа.id }} ({{ группа.Курс.Название }} - {{ группа.Курс.Тип.Название }})</option>
+            {% endfor %}
+        </select><br><br>
+        <button type="submit" name="submit_привязка">Привязать</button>
+    </form>
+</div>
+
+<script>
+function filterTable() {
     const input = document.getElementById("Filter").value.toLowerCase();
         // Таблица организаций
         document.querySelectorAll("#group-table tbody tr").forEach(row => {
@@ -221,5 +212,61 @@
     })
     .catch(err => alert(err));
     });
-    </script>
+function sendPrikazRequest(url, type, filename) {
+    const selectedIds = [];
+    document.querySelectorAll('#group-table tbody input[type="checkbox"]').forEach(checkbox => {
+        if (checkbox.checked) {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        }
+    });
+
+    if (selectedIds.length !== 1) {
+        alert("Выберите одну группу.");
+        return;
+    }
+
+    const csrfToken = document.querySelector('.doc-panel').dataset.csrfToken;
+
+    fetch(url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken
+        },
+        body: JSON.stringify({ ids: selectedIds, type: type })
+    })
+    .then(async res => {
+
+
+        const contentType = res.headers.get("content-type");
+
+        if (contentType && contentType.includes("application/json")) {
+            const data = await res.json();
+            alert(data.message || "Неизвестная ошибка при создании приказа.");
+            return;
+        }
+
+        const blob = await res.blob();
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = downloadUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(downloadUrl);
+    })
+}
+
+document.querySelector('button[name="Приказ_зачисл"]').addEventListener('click', function (e) {
+    e.preventDefault();
+    sendPrikazRequest("{% url 'order' %}", 1, "Приказ_о_зачислении.docx");
+});
+
+document.querySelector('button[name="Приказ_отчисл"]').addEventListener('click', function (e) {
+    e.preventDefault();
+    sendPrikazRequest("{% url 'order' %}", 2, "Приказ_об_отчислении.docx");
+});
+</script>
 {% endblock %}

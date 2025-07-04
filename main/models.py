@@ -23,8 +23,9 @@ class Курсы(models.Model):
 
 class Группы(models.Model):
     Курс = models.ForeignKey(Курсы, on_delete=models.CASCADE)
-    Дата_начала_курса = models.DateField(blank=True, null=True)
-    Дата_окончания_курса = models.DateField(blank=True, null=True)
+
+class Протоколы(models.Model):
+    Дата_составления = models.CharField(max_length=10)
 
 class Страны(models.Model):
     Название = models.CharField(max_length=100, unique=True)
@@ -41,12 +42,15 @@ class Слушатели(models.Model):
     Номер_паспорта = models.CharField(max_length=20, blank=True, null=True)
     Гражданство = models.ForeignKey(Страны, on_delete=models.SET_NULL, null=True)
     Номер_СНИЛС = models.CharField(max_length=11, blank=True, null=True)
-    ИНН = models.CharField(max_length=12, blank=True, null=False)
+    ИНН = models.CharField(max_length=12, blank=True, null=True)
     Телефон = models.CharField(max_length=10, blank=True, null=True)
     Email = models.EmailField(blank=True, null=True)
 
 class Статусы(models.Model):
-    Название = models.CharField(max_length=50, null=False, default="")
+    Название = models.CharField(max_length=50, null=False, default="", unique=True)
+
+class Приказы(models.Model):
+    Hash = models.IntegerField()
 
 class Человек_группа(models.Model):
     Слушатель = models.ForeignKey(Слушатели, on_delete=models.CASCADE)

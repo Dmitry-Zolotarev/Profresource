@@ -107,5 +107,8 @@ label {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 10px;
+    gap: 15px;
+}
+.doc-button {
+    width: 256px;
 }

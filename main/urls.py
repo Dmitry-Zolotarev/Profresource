@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.urls import path
 from . import views
 urlpatterns = [
@@ -27,5 +29,8 @@ urlpatterns = [
     path('import_groups_XLSX/', views.import_groups_XLSX, name='import_groups_XLSX'),
     path('import_courses_XLSX/', views.import_courses_XLSX, name='import_courses_XLSX'),
     path('import_organisations_XLSX/', views.import_organisations_XLSX, name='import_organisations_XLSX'),
+
+    path('create_udostov/', views.create_udostov, name='create_udostov'),
+    path('order/', views.order, name='order'),
 
 ]
