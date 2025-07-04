@@ -20,7 +20,6 @@ urlpatterns = [
     path('export_listeners_DOCX/', views.export_listeners_DOCX, name='export_listeners_DOCX'),
     path('export_groups_DOCX/', views.export_groups_DOCX, name='export_groups_DOCX'),
     path('export_courses_DOCX/', views.export_courses_DOCX, name='export_courses_DOCX'),
-    path('export_organisations_DOCX/', views.export_organisations_DOCX, name='export_organisations_DOCX'),
     path('export_listeners_XLSX/', views.export_listeners_XLSX, name='export_listeners_XLSX'),
     path('export_groups_XLSX/', views.export_groups_XLSX, name='export_groups_XLSX'),
     path('export_courses_XLSX/', views.export_courses_XLSX, name='export_courses_XLSX'),
@@ -33,4 +32,5 @@ urlpatterns = [
     path('create_udostov/', views.create_udostov, name='create_udostov'),
     path('order/', views.order, name='order'),
 
+    path('generate_certificates_zip/', views.generate_certificates_zip, name='generate_certificates_zip'),
 ]

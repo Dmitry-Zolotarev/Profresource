@@ -26,8 +26,20 @@
             </tr>
             {% endfor %}
         </tbody>
-    </table>
-
+    </table><br>
+    <div class="doc-panel" data-csrf-token="{{ csrf_token }}">
+        <form id="import-form" action="{% url 'import_groups_XLSX' %}" method="post" enctype="multipart/form-data" style="display: none;">
+            {% csrf_token %}
+            <input class="doc-button" id="file-input" type="file" name="excel_file" accept=".xlsx" required onchange="document.getElementById('import-form').submit();">
+        </form>
+        <button class="doc-button" name="Группы_XLSX">Сохранить данные в таблицу Excel</button>
+        <button type="button" onclick="document.getElementById('file-input').click();">Загрузить данные из таблицы Excel</button>
+    </div><br>
+    <div class="doc-panel">
+        <button class="doc-button" name="Группы_DOCX">Составить ведомость обучения</button>
+        <button class="doc-button" name="Приказ_зачисл">Составить приказ о зачислении</button>
+        <button class="doc-button" name="Приказ_отчисл">Составить приказ о отчислении</button>
+    </div>
     <!-- Форма добавления новой группы -->
     <h3>Добавление новой группы</h3>
     <form class="account-form" method="post" action="{% url 'group_list' %}">
@@ -71,24 +83,7 @@
             </tr>
             {% endfor %}
         </tbody>
-    </table><br>
-
-    <div class="doc-panel" data-csrf-token="{{ csrf_token }}">
-        <form id="import-form" action="{% url 'import_groups_XLSX' %}" method="post" enctype="multipart/form-data" style="display: none;">
-            {% csrf_token %}
-            <input class="doc-button" id="file-input" type="file" name="excel_file" accept=".xlsx" required onchange="document.getElementById('import-form').submit();">
-        </form>
-        <button class="doc-button" name="Группы_XLSX">Сохранить данные в таблицу Excel</button>
-        <button type="button" onclick="document.getElementById('file-input').click();">Загрузить данные из таблицы Excel</button>
-        <button class="doc-button" name="Группы_DOCX">Составить ведомость обучения</button>
-    </div><br>
-
-    <div class="doc-panel">
-        <button class="doc-button" name="Удостоверение">Составить удостоверение</button>
-        <button class="doc-button" name="Приказ_зачисл">Составить приказ о зачислении</button>
-        <button class="doc-button" name="Приказ_отчисл">Составить приказ о отчислении</button>
-    </div>
-
+    </table>
     <h3>Добавить привязку</h3>
     <form class="account-form" method="post" action="{% url 'group_list' %}">
         {% csrf_token %}

@@ -36,7 +36,16 @@
                 </tr>
              {% endfor %}
         </tbody>
-        </table>
+        </table><br>
+         <div class="doc-panel">
+             <form id="import-form" action="{% url 'import_organisations_XLSX' %}" method="post" enctype="multipart/form-data" style="display: none;">
+                {% csrf_token %}
+                <input id="file-input" type="file" name="excel_file" accept=".xlsx" required onchange="document.getElementById('import-form').submit();">
+            </form>
+             <button type="submit" name="Организации_XLSX">Сохранить данные в таблицу Excel</button>
+             <button type="button" onclick="document.getElementById('file-input').click();">Загрузить данные из таблицы Excel</button>
+             <button id="btn-all-cert">Составить удостоверения</button>
+        </div>
         <h3>Добавление новой организации</h3>
         <form class="account-form" method="post" action="{% url 'organisation_list' %}">
             {% csrf_token %}
@@ -81,20 +90,7 @@
                     </tr>
                  {% endfor %}
             </tbody>
-        </table><br>
-        <div class="doc-panel">
-            <form action="{% url 'export_organisations_DOCX' %}">
-                <button type="submit" name="Организации_DOCX">Построить Word-документ</button>
-            </form>
-            <form action="{% url 'export_organisations_XLSX' %}">
-                <button type="submit" name="Организации_XLSX">Сохранить данные в таблицу Excel</button>
-            </form>
-            <form id="import-form" action="{% url 'import_organisations_XLSX' %}" method="post" enctype="multipart/form-data" style="display: none;">
-                {% csrf_token %}
-                <input id="file-input" type="file" name="excel_file" accept=".xlsx" required onchange="document.getElementById('import-form').submit();">
-            </form>
-            <button type="button" onclick="document.getElementById('file-input').click();">Загрузить данные из таблицы Excel</button>
-        </div>
+        </table>
         <h3>Добавить привязку</h3>
         <form class="account-form" method="post" action="{% url 'organisation_list' %}">
             {% csrf_token %}
@@ -135,50 +131,6 @@
             row.style.display = text.includes(input) ? "" : "none";
         });
     }
-    document.querySelector('button[name="Организации_DOCX"]').addEventListener('click', function (e) {
-    e.preventDefault();
-    const selectedIds = [];
-    document.querySelectorAll('#organisation-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
-        if (checkbox.checked) {
-            const id = checkbox.closest('tr').dataset.id;
-            if (id) selectedIds.push(id);
-        }
-    });
-    //Если записи не выбраны галочками, будет добавлена вся таблица
-    if (selectedIds.length === 0) {
-        document.querySelectorAll('#organisation-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
-            const id = checkbox.closest('tr').dataset.id;
-            if (id) selectedIds.push(id);
-        });
-        if(selectedIds.length === 0) {
-            alert("Нет данных для сохранения в документ!")
-            throw new Error()
-        }
-    }
-    fetch("{% url 'export_organisations_DOCX' %}", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": "{{ csrf_token }}"
-        },
-        body: JSON.stringify({ ids: selectedIds })
-    })
-    .then(res => {
-        if (!res.ok) throw new Error('Ошибка при генерации документа!');
-        return res.blob();
-    })
-    .then(blob => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = "Организации.docx";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-    })
-    .catch(err => alert(err));
-    });
     document.querySelector('button[name="Организации_XLSX"]').addEventListener('click', function (e) {
     e.preventDefault();
     const selectedIds = [];
@@ -223,5 +175,44 @@
     })
     .catch(err => alert(err));
     });
-    </script>
+    document.getElementById("btn-all-cert").addEventListener("click", function(e) {
+    e.preventDefault();
+
+    const selectedIds = [];
+    document.querySelectorAll('#organisation-table tbody input[type="checkbox"]').forEach(checkbox => {
+        if (checkbox.checked) {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        }
+    });
+
+    if (selectedIds.length === 0) {
+        alert("Выберите хотя бы одну организацию.");
+        return;
+    }
+    fetch("{% url 'generate_certificates_zip' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify({ ids: selectedIds })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Ошибка при создании документов");
+        return res.blob();
+    })
+    .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Документы_по_организациям.zip";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    })
+    .catch(err => alert(err));
+});
+</script>
 {% endblock %}

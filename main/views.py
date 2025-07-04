@@ -5,10 +5,10 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.db.models import F, Q
 import json, re
+import zipfile
 from io import BytesIO
 from datetime import date
 from datetime import datetime
-from docxtpl import DocxTemplate
 from docx import Document
 from docx.shared import Mm, Pt, Inches
 from docx.enum.section import WD_ORIENT
@@ -24,7 +24,7 @@ from .models import (
     Слушатели, Пол, Группы, Курсы, Типы_курсов,
     Материалы_курсов, Типы_материалов,
     Организации, Человек_группа, Человек_организация,
-    Статусы, Месяцы, Страны, Приказы
+    Статусы, Месяцы, Страны, Приказы, Протоколы
 )
 def слушатели_view(request):
     if request.method == 'POST':
@@ -505,99 +505,6 @@ def export_courses_DOCX(request):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
-def export_organisations_DOCX(request):
-    try:
-        doc = Document()
-        section = doc.sections[0]
-        section.orientation = WD_ORIENT.LANDSCAPE
-        section.page_width = Mm(297)
-        section.page_height = Mm(210)
-        section.left_margin = Mm(10)
-        section.right_margin = Mm(10)
-        section.top_margin = Mm(15)
-        section.bottom_margin = Mm(15)
-
-        org_paragraph = doc.add_paragraph()
-        org_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run = org_paragraph.add_run(
-            'Автономная некоммерческая организация дополнительного профессионального образования\n')
-        run.font.name = 'Times New Roman'
-        run.font.size = Pt(14)
-        run = org_paragraph.add_run('«Сибирская академия профессионального обучения»')
-        run.font.name = 'Times New Roman'
-        run.font.size = Pt(14)
-        run.bold = True
-
-        date = doc.add_paragraph("Отчёт от " + today_date())
-        date.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        date.runs[0].font.name = 'Times New Roman'
-        date.runs[0].font.size = Pt(14)
-
-        heading = doc.add_paragraph("Организации и их сотрудники")
-        heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        heading.runs[0].font.name = 'Times New Roman'
-        heading.runs[0].font.size = Pt(14)
-
-        body_unicode = request.body.decode('utf-8')
-        организации = Организации.objects.filter(id__in=json.loads(body_unicode).get('ids', []))
-
-        for организация in организации:
-            # Заголовок группы
-            p = doc.add_paragraph()
-            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            run = p.add_run(f"{организация.Название} (ИНН: {организация.ИНН}, ОГРН: {организация.ОГРН})")
-            run.font.name = 'Times New Roman'
-            run.font.size = Pt(12)
-            run.bold = True
-
-            привязки = Человек_организация.objects.filter(Организация=организация).select_related('Слушатель')
-            if not привязки.exists():
-                paragraph = doc.add_paragraph("Сотрудников нет в базе данных")
-                paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                paragraph.runs[0].font.name = 'Times New Roman'
-                paragraph.runs[0].font.size = Pt(12)
-                continue
-
-            headers = ['Сотрудник', 'Должность']
-
-            table = doc.add_table(rows=1, cols=len(headers))
-            table.style = 'Table Grid'
-
-            for i, text in enumerate(headers):
-                paragraph = table.rows[0].cells[i].paragraphs[0]
-                paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                run = paragraph.add_run(text)
-                run.font.name = 'Times New Roman'
-                run.font.size = Pt(12)
-
-            for привязка in привязки:
-                слушатель = привязка.Слушатель
-                row = table.add_row().cells
-                values = [
-                    f"{слушатель.Фамилия} {слушатель.Имя} {слушатель.Отчество or ''} (ИНН: {слушатель.ИНН})",
-                    привязка.Должность
-                ]
-                for i, text in enumerate(values):
-                    cell = row[i]
-                    paragraph = cell.paragraphs[0]
-                    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                    run = paragraph.add_run(text)
-                    run.font.name = 'Times New Roman'
-                    run.font.size = Pt(12)
-        director = doc.add_paragraph("\nДиректор" + (' ' * 50) + "В.Н. Котлов")
-        director.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        director.runs[0].font.name = 'Times New Roman'
-        director.runs[0].font.size = Pt(14)
-
-        buf = BytesIO()
-        doc.save(buf)
-        buf.seek(0)
-        response = HttpResponse(buf.read(),
-                                content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-        response['Content-Disposition'] = 'attachment; filename="Организации.docx"'
-        return response
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
 def export_listeners_XLSX(request):
     try:
@@ -1007,10 +914,10 @@ def order(request):
 
         participant_ids = sorted(str(p.Слушатель.id) for p in participants)
         hash_input = str(группа.id) + ''.join(participant_ids) + str(param) + today_date()
-        order_hash = int(hashlib.md5(hash_input.encode('utf-8')).hexdigest(), 16) % (2 ** 31)
+        order_hash = str(int(hashlib.md5(hash_input.encode('utf-8')).hexdigest(), 16))
 
-        new_order, created = Приказы.objects.get_or_create(Hash=order_hash)
-        order_number = f"{new_order.id}з" if param == 1 else f"{new_order.id}о"
+        order, created = Приказы.objects.get_or_create(Hash=order_hash)
+        order_number = f"{order.id}з" if param == 1 else f"{order.id}о"
         title = doc.add_paragraph(f"Приказ №{order_number}")
         title.alignment = WD_ALIGN_PARAGRAPH.CENTER
         title.runs[0].font.name = 'Times New Roman'
@@ -1092,3 +999,214 @@ def order(request):
 
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+def generate_certificate_doc(организации):
+    doc = Document()
+    return doc
+
+def generate_protocol_doc(организации):
+    организация = организации.first()
+    if not организация:
+        raise ValueError("Не передана организация.")
+    doc = Document()
+    section = doc.sections[0]
+    section.orientation = WD_ORIENT.LANDSCAPE
+    section.page_width = Mm(210)
+    section.page_height = Mm(297)
+    section.left_margin = Mm(10)
+    section.right_margin = Mm(10)
+    section.top_margin = Mm(15)
+    section.bottom_margin = Mm(15)
+
+    org_paragraph = doc.add_paragraph()
+    org_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = org_paragraph.add_run('Автономная некоммерческая организация\nдополнительного профессионального образования\n')
+
+    run.font.name = 'Times New Roman'
+    run.font.size = Pt(12)
+    run = org_paragraph.add_run('«Сибирская академия профессионального обучения»')
+    run.font.name = 'Times New Roman'
+    run.font.size = Pt(12)
+    run.bold = True
+
+    participants = Человек_организация.objects.filter(Организация=организация)
+    participant_ids = sorted(str(p.Слушатель.id) for p in participants)
+    hash_input = str(организация.id) + ''.join(participant_ids) + today_date()
+    order_hash = str(int(hashlib.md5(hash_input.encode('utf-8')).hexdigest(), 16))
+
+    protocol, created = Протоколы.objects.get_or_create(Hash=order_hash)
+    heading = doc.add_paragraph(f"Протокол №{protocol.id}\n\nзаседания комиссии по проверке знаний требований охраны труда работников\n\n{организация.id}")
+    heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    heading.runs[0].font.name = 'Times New Roman'
+    heading.runs[0].font.size = Pt(12)
+
+    date = doc.add_paragraph(today_date())
+    date.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    date.runs[0].font.name = 'Times New Roman'
+    date.runs[0].font.size = Pt(12)
+
+    decision = doc.add_paragraph("В соответствии с приказом директора АНО ДПО «САПО» №3 от 05 июля 2024 г. комиссия в составе:\n\nПредседатель:	Котлов В.Н. – Директор\nЧлены комиссии:	Райков Т.Г. – Заместитель директора по развитию\nАзиханова Р.И. – Методист\n\nпровела проверку знаний требований охраны труда по программам:")
+    decision.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    decision.paragraph_format.first_line_indent = Mm(10)
+    decision.runs[0].font.name = 'Times New Roman'
+    decision.runs[0].font.size = Pt(12)
+    headers = ['№','Ф.И.О.', 'Должность', 'Подпись проверяемого']
+    for курс in Курсы.objects.all():
+        чел_группа = Человек_группа.objects.filter(Группа__in=Группы.objects.filter(Курс=курс))
+        слушатели = чел_группа.values_list('Слушатель__id', flat=True)
+        сотрудники = Человек_организация.objects.filter(Слушатель__id__in=слушатели, Организация=организация)
+
+        if сотрудники.count() == 0: continue
+
+        course = doc.add_paragraph(f"{курс.id}. {курс.Название}, в объёме {курс.Объём_часов} часов.")
+        course.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        course.paragraph_format.first_line_indent = Mm(10)
+        course.runs[0].font.name = 'Times New Roman'
+        course.runs[0].font.size = Pt(12)
+
+        table = doc.add_table(rows=1, cols=len(headers))
+        table.style = 'Table Grid'
+
+        for i, text in enumerate(headers):
+            paragraph = table.rows[0].cells[i].paragraphs[0]
+            paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = paragraph.add_run(text)
+            run.font.name = 'Times New Roman'
+            run.font.size = Pt(12)
+
+        for i, привязка in enumerate(сотрудники):
+            row = table.add_row().cells
+            values = [
+                f"{i + 1}", f"{привязка.Слушатель.Фамилия} {привязка.Слушатель.Имя} {привязка.Слушатель.Отчество or ''}",
+                привязка.Должность, ''
+            ]
+            for j, text in enumerate(values):
+                cell = row[j]
+                paragraph = cell.paragraphs[0]
+                paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                run = paragraph.add_run(text)
+                run.font.name = 'Times New Roman'
+                run.font.size = Pt(12)
+
+        director = doc.add_paragraph("\nПредседатель" + (' ' * 50) + "В.Н. Котлов")
+        director.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        director.runs[0].font.name = 'Times New Roman'
+        director.runs[0].font.size = Pt(12)
+
+        director = doc.add_paragraph("\nЧлены комиссии" + (' ' * 50) + "Т.Г. Райков, Р.И. Азиханова")
+        director.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        director.runs[0].font.name = 'Times New Roman'
+        director.runs[0].font.size = Pt(12)
+    return doc
+def generate_vedomost_doc(организации):
+    doc = Document()
+    section = doc.sections[0]
+    section.orientation = WD_ORIENT.LANDSCAPE
+    section.page_width = Mm(297)
+    section.page_height = Mm(210)
+    section.left_margin = Mm(10)
+    section.right_margin = Mm(10)
+    section.top_margin = Mm(15)
+    section.bottom_margin = Mm(15)
+
+    org_paragraph = doc.add_paragraph()
+    org_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = org_paragraph.add_run(
+        'Автономная некоммерческая организация\nдополнительного профессионального образования\n')
+    run.font.name = 'Times New Roman'
+    run.font.size = Pt(14)
+    run = org_paragraph.add_run('«Сибирская академия профессионального обучения»')
+    run.font.name = 'Times New Roman'
+    run.font.size = Pt(14)
+    run.bold = True
+
+    heading = doc.add_paragraph("Ведомость выдачи документов от " + today_date())
+    heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    heading.runs[0].font.name = 'Times New Roman'
+    heading.runs[0].font.size = Pt(14)
+
+    for организация in организации:
+        # Заголовок группы
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = p.add_run(f"Организация: {организация.Название} (ИНН: {организация.ИНН}, ОГРН: {организация.ОГРН})")
+        run.font.name = 'Times New Roman'
+        run.font.size = Pt(12)
+
+        привязки = Человек_организация.objects.filter(Организация=организация).select_related('Слушатель')
+        if not привязки.exists():
+            paragraph = doc.add_paragraph("Сотрудников нет в базе данных")
+            paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            paragraph.runs[0].font.name = 'Times New Roman'
+            paragraph.runs[0].font.size = Pt(12)
+            continue
+
+        headers = ['ФИО слушателя', 'Должность', 'Номер бланка удостоверения (свидетельства)', 'Номер протокола','Дата выдачи', 'Подпись']
+
+        table = doc.add_table(rows=1, cols=len(headers))
+        table.style = 'Table Grid'
+
+        for i, text in enumerate(headers):
+            paragraph = table.rows[0].cells[i].paragraphs[0]
+            paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = paragraph.add_run(text)
+            run.font.name = 'Times New Roman'
+            run.font.size = Pt(12)
+
+        протокол = str(Протоколы.objects.last().id) if Протоколы.objects.exists() else '0'
+
+        for привязка in привязки:
+            row = table.add_row().cells
+            values = [
+                f"{привязка.Слушатель.Фамилия} {привязка.Слушатель.Имя} {привязка.Слушатель.Отчество or ''}",
+                привязка.Должность, str(привязка.id), протокол, today_date(), ''
+            ]
+            for i, text in enumerate(values):
+                cell = row[i]
+                paragraph = cell.paragraphs[0]
+                paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                run = paragraph.add_run(text)
+                run.font.name = 'Times New Roman'
+                run.font.size = Pt(12)
+    director = doc.add_paragraph("\nДиректор" + (' ' * 50) + "В.Н. Котлов")
+    director.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    director.runs[0].font.name = 'Times New Roman'
+    director.runs[0].font.size = Pt(14)
+    return doc
+
+def generate_certificates_zip(request):
+    if request.method == "POST":
+        body = json.loads(request.body)
+        ids = body.get("ids", [])
+        if not ids:
+            return JsonResponse({"error": "Нет выбранных ID."}, status=400)
+
+        organizations = Организации.objects.filter(id__in=ids)
+        if not organizations.exists():
+            return JsonResponse({"error": "Организации не найдены."}, status=404)
+
+        zip_buffer = BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            # Удостоверения
+            doc1 = generate_certificate_doc(organizations)
+            doc_bytes1 = BytesIO()
+            doc1.save(doc_bytes1)
+            zip_file.writestr("Удостоверения.docx", doc_bytes1.getvalue())
+
+            # Протокол
+            doc2 = generate_protocol_doc(organizations)
+            doc_bytes2 = BytesIO()
+            doc2.save(doc_bytes2)
+            zip_file.writestr("Протокол.docx", doc_bytes2.getvalue())
+
+            # Ведомость выдачи сертификатов
+            doc3 = generate_vedomost_doc(organizations)
+            doc_bytes3 = BytesIO()
+            doc3.save(doc_bytes3)
+            zip_file.writestr("Ведомость_выдачи_сертификатов.docx", doc_bytes3.getvalue())
+
+        zip_buffer.seek(0)
+        response = HttpResponse(zip_buffer.read(), content_type='application/zip')
+        response['Content-Disposition'] = 'attachment; filename=Документы_по_удостоверениям.zip'
+        return response
+    return JsonResponse({"error": "Метод не поддерживается."}, status=405)

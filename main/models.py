@@ -24,9 +24,6 @@ class Курсы(models.Model):
 class Группы(models.Model):
     Курс = models.ForeignKey(Курсы, on_delete=models.CASCADE)
 
-class Протоколы(models.Model):
-    Дата_составления = models.CharField(max_length=10)
-
 class Страны(models.Model):
     Название = models.CharField(max_length=100, unique=True)
     Краткое_название = models.CharField(max_length=50, unique=True)
@@ -50,7 +47,10 @@ class Статусы(models.Model):
     Название = models.CharField(max_length=50, null=False, default="", unique=True)
 
 class Приказы(models.Model):
-    Hash = models.IntegerField()
+    Hash = models.CharField(max_length=64, null=True)
+
+class Протоколы(models.Model):
+    Hash = models.CharField(max_length=64, null=True)
 
 class Человек_группа(models.Model):
     Слушатель = models.ForeignKey(Слушатели, on_delete=models.CASCADE)
