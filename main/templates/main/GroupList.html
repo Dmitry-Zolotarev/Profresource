@@ -32,11 +32,12 @@
             {% csrf_token %}
             <input class="doc-button" id="file-input" type="file" name="excel_file" accept=".xlsx" required onchange="document.getElementById('import-form').submit();">
         </form>
-        <button class="doc-button" name="Группы_XLSX">Сохранить данные в таблицу Excel</button>
-        <button type="button" onclick="document.getElementById('file-input').click();">Загрузить данные из таблицы Excel</button>
+        <button class="doc-button" name="Группы_XLSX_save">Сохранить данные в таблицу Excel</button>
+        <button type="button" name="Группы_XLSX_load"
+                onclick="document.getElementById('file-input').click();">Загрузить данные из таблицы Excel</button>
     </div><br>
     <div class="doc-panel">
-        <button class="doc-button" name="Группы_DOCX">Составить ведомость обучения</button>
+        <button class="doc-button" name="Ведомость_обучения">Составить ведомость обучения</button>
         <button class="doc-button" name="Приказ_зачисл">Составить приказ о зачислении</button>
         <button class="doc-button" name="Приказ_отчисл">Составить приказ о отчислении</button>
     </div>
@@ -118,52 +119,8 @@ function filterTable() {
             row.style.display = text.includes(input) ? "" : "none";
         });
     }
-    document.querySelector('button[name="Группы_DOCX"]').addEventListener('click', function (e) {
-    e.preventDefault();
 
-    const selectedIds = [];
-    document.querySelectorAll('#group-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
-        if (checkbox.checked) {
-            const id = checkbox.closest('tr').dataset.id;
-            if (id) selectedIds.push(id);
-        }
-    });
-    //Если записи не выбраны галочками, будет добавлена вся таблица
-    if (selectedIds.length === 0) {
-        document.querySelectorAll('#group-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
-            const id = checkbox.closest('tr').dataset.id;
-            if (id) selectedIds.push(id);
-        });
-        if(selectedIds.length === 0) {
-            alert("Нет данных для сохранения в документ!")
-            throw new Error()
-        }
-    }
-    fetch("{% url 'export_groups_DOCX' %}", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": "{{ csrf_token }}"
-        },
-        body: JSON.stringify({ ids: selectedIds })
-    })
-    .then(res => {
-        if (!res.ok) throw new Error('Ошибка при генерации документа!');
-        return res.blob();
-    })
-    .then(blob => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = "Группы.docx";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-    })
-    .catch(err => alert(err));
-    });
-    document.querySelector('button[name="Группы_XLSX"]').addEventListener('click', function (e) {
+    document.querySelector('button[name="Группы_XLSX_save"]').addEventListener('click', function (e) {
     e.preventDefault();
     const selectedIds = [];
     document.querySelectorAll('#group-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
@@ -207,7 +164,52 @@ function filterTable() {
     })
     .catch(err => alert(err));
     });
-function sendPrikazRequest(url, type, filename) {
+document.querySelector('button[name="Ведомость_обучения"]').addEventListener('click', function (e) {
+    e.preventDefault();
+
+    const selectedIds = [];
+    document.querySelectorAll('#group-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
+        if (checkbox.checked) {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        }
+    });
+    //Если записи не выбраны галочками, будет добавлена вся таблица
+    if (selectedIds.length === 0) {
+        document.querySelectorAll('#group-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        });
+        if(selectedIds.length === 0) {
+            alert("Нет данных для сохранения в документ!")
+            throw new Error()
+        }
+    }
+    fetch("{% url 'training_record' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify({ ids: selectedIds })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Ошибка при генерации документа!');
+        return res.blob();
+    })
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "Ведомость_электронного_обучения.docx";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    })
+    .catch(err => alert(err));
+    });
+function sendOrderRequest(url, type, filename) {
     const selectedIds = [];
     document.querySelectorAll('#group-table tbody input[type="checkbox"]').forEach(checkbox => {
         if (checkbox.checked) {
@@ -233,7 +235,6 @@ function sendPrikazRequest(url, type, filename) {
     })
     .then(async res => {
 
-
         const contentType = res.headers.get("content-type");
 
         if (contentType && contentType.includes("application/json")) {
@@ -253,15 +254,13 @@ function sendPrikazRequest(url, type, filename) {
         URL.revokeObjectURL(downloadUrl);
     })
 }
-
 document.querySelector('button[name="Приказ_зачисл"]').addEventListener('click', function (e) {
     e.preventDefault();
-    sendPrikazRequest("{% url 'order' %}", 1, "Приказ_о_зачислении.docx");
+    sendOrderRequest("{% url 'order' %}", 1, "Приказ_о_зачислении.docx");
 });
-
 document.querySelector('button[name="Приказ_отчисл"]').addEventListener('click', function (e) {
     e.preventDefault();
-    sendPrikazRequest("{% url 'order' %}", 2, "Приказ_об_отчислении.docx");
+    sendOrderRequest("{% url 'order' %}", 2, "Приказ_об_отчислении.docx");
 });
 </script>
 {% endblock %}

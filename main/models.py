@@ -47,10 +47,11 @@ class Статусы(models.Model):
     Название = models.CharField(max_length=50, null=False, default="", unique=True)
 
 class Приказы(models.Model):
-    Hash = models.CharField(max_length=64, null=True)
+    Hash = models.IntegerField(null=True)
 
 class Протоколы(models.Model):
-    Hash = models.CharField(max_length=64, null=True)
+    Hash = models.IntegerField(null=True)
+
 
 class Человек_группа(models.Model):
     Слушатель = models.ForeignKey(Слушатели, on_delete=models.CASCADE)

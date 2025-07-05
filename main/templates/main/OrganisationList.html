@@ -42,8 +42,9 @@
                 {% csrf_token %}
                 <input id="file-input" type="file" name="excel_file" accept=".xlsx" required onchange="document.getElementById('import-form').submit();">
             </form>
-             <button type="submit" name="Организации_XLSX">Сохранить данные в таблицу Excel</button>
-             <button type="button" onclick="document.getElementById('file-input').click();">Загрузить данные из таблицы Excel</button>
+             <button type="submit" name="Организации_XLSX_save">Сохранить данные в таблицу Excel</button>
+             <button type="button" name="Организации_XLSX_load"
+                     onclick="document.getElementById('file-input').click();">Загрузить данные из таблицы Excel</button>
              <button id="btn-all-cert">Составить удостоверения</button>
         </div>
         <h3>Добавление новой организации</h3>
@@ -131,7 +132,7 @@
             row.style.display = text.includes(input) ? "" : "none";
         });
     }
-    document.querySelector('button[name="Организации_XLSX"]').addEventListener('click', function (e) {
+    document.querySelector('button[name="Организации_XLSX_save"]').addEventListener('click', function (e) {
     e.preventDefault();
     const selectedIds = [];
     document.querySelectorAll('#organisation-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
@@ -167,7 +168,7 @@
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = "Сотрудники организаций.xlsx";
+        a.download = "Сотрудники_организаций.xlsx";
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -186,8 +187,8 @@
         }
     });
 
-    if (selectedIds.length === 0) {
-        alert("Выберите хотя бы одну организацию.");
+    if (selectedIds.length != 1) {
+        alert("Выберите одну организацию.");
         return;
     }
     fetch("{% url 'generate_certificates_zip' %}", {
@@ -206,7 +207,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "Документы_по_организациям.zip";
+        a.download = "Документы_по_удостоверениям.zip";
         document.body.appendChild(a);
         a.click();
         a.remove();

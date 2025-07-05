@@ -17,9 +17,6 @@ urlpatterns = [
     path('delete_material/<int:id>/', views.delete_material, name='delete_material'),
     path('delete_organisation/<int:id>/', views.delete_organisation, name='delete_organisation'),
     path('delete_org_linking/<int:id>/', views.delete_org_linking, name='delete_org_linking'),
-    path('export_listeners_DOCX/', views.export_listeners_DOCX, name='export_listeners_DOCX'),
-    path('export_groups_DOCX/', views.export_groups_DOCX, name='export_groups_DOCX'),
-    path('export_courses_DOCX/', views.export_courses_DOCX, name='export_courses_DOCX'),
     path('export_listeners_XLSX/', views.export_listeners_XLSX, name='export_listeners_XLSX'),
     path('export_groups_XLSX/', views.export_groups_XLSX, name='export_groups_XLSX'),
     path('export_courses_XLSX/', views.export_courses_XLSX, name='export_courses_XLSX'),
@@ -28,8 +25,7 @@ urlpatterns = [
     path('import_groups_XLSX/', views.import_groups_XLSX, name='import_groups_XLSX'),
     path('import_courses_XLSX/', views.import_courses_XLSX, name='import_courses_XLSX'),
     path('import_organisations_XLSX/', views.import_organisations_XLSX, name='import_organisations_XLSX'),
-
-    path('create_udostov/', views.create_udostov, name='create_udostov'),
+    path('training_record/', views.training_record, name='training_record'),
     path('order/', views.order, name='order'),
 
     path('generate_certificates_zip/', views.generate_certificates_zip, name='generate_certificates_zip'),
