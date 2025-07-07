@@ -1,0 +1,114 @@
+body {
+    font-family: "Calibri Light";
+    text-align: center;
+    align-content: center;
+    background-color: #f9f9f9;
+}
+.user-label {
+    text-align: right;
+}
+table {
+    margin-left: 3%;
+    width: 94%;
+    border-radius: 5px;
+    background-color: #f7f7f7;
+    border: 1px solid #666666;
+}
+th, td {
+    border: 1px solid #666666;
+}
+
+.account-form {
+    background-color: #f7f7f7;
+    display: inline-block;
+    border: 1px solid #666666;
+    padding-left: 10px;
+    padding-bottom: 10px;
+    padding-right: 10px;
+}
+button, select {
+    text-align: center;
+    border: solid 1px;
+    border-color: #999999;
+    padding-left: 20px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-right: 20px;
+    margin: 0;
+}
+button, select:hover {
+    cursor: pointer;
+}
+.menu-button {
+    width: 400px;
+    border: solid;
+    border-width: 1px;
+    border-radius: 3px;
+    background-color: lightyellow;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+.button-menu {
+    background-color: #f9f9f9;
+    border-radius: 3px;
+    display: inline-block;
+    border: solid;
+    border-width: 1px;
+    padding: 5px;
+}
+.delete-button {
+    background: none;
+    border: none;
+    color: darkred;
+    cursor: pointer;
+    font-size: 12pt;
+    padding: 0;
+}
+input[type="text"] {
+    margin: 0;
+    width: 300px;
+}
+input[type="email"] {
+    margin: 0;
+    width: 300px;
+}
+h2, h3, p {
+    margin: 10px;
+}
+.tab {
+    overflow: hidden;
+    border-bottom: 1px solid #ccc;
+}
+.tab button {
+    background-color: inherit;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 10px 20px;
+    transition: 0.3s;
+}
+.tab button.active {
+    background-color: #ccc;
+}
+.empty_table {
+    border: none;
+}
+.add-row {
+    align-self: center;
+    align-items: center;
+    gap: 10px;
+}
+label {
+    margin: 0;
+}
+.doc-panel {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+}
+.doc-button {
+    width: 256px;
+}

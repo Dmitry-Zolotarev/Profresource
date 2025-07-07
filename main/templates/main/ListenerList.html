@@ -1,0 +1,170 @@
+{% extends 'main/MainMenu.html' %}
+{% block title %}ООО "Профресурс" - Слушатели{% endblock %}
+
+{% block content %}
+<h3>Список слушателей</h3>
+<div>
+    <table class="table" id="listener-table">
+        <thead>
+            <tr>
+                <th>Выбор</th>
+                <th>Фамилия</th>
+                <th>Имя</th>
+                <th>Отчество</th>
+                <th>Дата рождения</th>
+                <th>Пол</th>
+                <th>Гражданство</th>
+                <th>Серия</th>
+                <th>Номер паспорта</th>
+                <th>ИНН</th>
+                <th>Номер СНИЛС</th>
+                <th>Телефон</th>
+                <th>Email</th>
+                <th>Удалить</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for слушатель in слушатели %}
+                <tr data-id="{{ слушатель.id }}">
+                    <td><input type="checkbox"></td>
+                    <td>{{ слушатель.Фамилия }}</td>
+                    <td>{{ слушатель.Имя }}</td>
+                    <td>{{ слушатель.Отчество|default_if_none:"" }}</td>
+                    <td>{{ слушатель.Дата_рождения|date:"d.m.Y" }}</td>
+                    <td>{{ слушатель.Пол.Название }}</td>
+                    <td>{{ слушатель.Гражданство.Краткое_название }}</td>
+                    <td>{{ слушатель.Серия_паспорта }}</td>
+                    <td>{{ слушатель.Номер_паспорта }}</td>
+                    <td>{{ слушатель.ИНН }}</td>
+                    <td>{{ слушатель.Номер_СНИЛС }}</td>
+                    <td>
+                        {% if слушатель.Телефон %}
+                            +{{ слушатель.Гражданство.Телефонный_код }}{{ слушатель.Телефон }}
+                        {% endif %}
+                    </td>
+                    <td>{{ слушатель.Email }}</td>
+                    <td>
+                        <form action="{% url 'delete_listener' слушатель.id %}">
+                            <button title="Удалить запись" type="submit" class="delete-button"
+                               onclick="return confirm('Удалить эту запись?');">X</button>
+                        </form>
+                    </td>
+                </tr>
+             {% endfor %}
+        </tbody>
+    </table><br>
+    <div class="doc-panel">
+        <form id="import-form" action="{% url 'import_listeners_XLSX' %}" method="post" enctype="multipart/form-data" style="display: none;">
+            {% csrf_token %}
+            <input id="file-input" type="file" name="excel_file" accept=".xlsx" required onchange="document.getElementById('import-form').submit();">
+        </form>
+        <button type="submit" name="Слушатели_XLSX_save">Сохранить таблицу в Excel</button>
+        <button type="button" name="Слушатели_XLSX_load"
+                onclick="document.getElementById('file-input').click();">Загрузить данные из таблицы Excel</button>
+    </div>
+    <h3>Добавление нового слушателя</h3>
+    <form class="account-form" method="post" action="{% url 'student_list' %}">
+        {% csrf_token %}
+
+        <label>Фамилия:</label><br>
+        <input type="text" name="Фамилия" required><br>
+
+        <label>Имя:</label><br>
+        <input type="text" name="Имя" required><br>
+
+        <label>Отчество:</label><br>
+        <input type="text" name="Отчество"><br>
+
+        <label>Дата рождения:</label><br>
+        <input type="date" name="Дата_рождения" required><br>
+
+        <label>Пол:</label><br>
+        <select name="Пол">
+            {% for пол in полы %}
+                <option value="{{ пол.id }}">{{ пол.Название }}</option>
+            {% endfor %}
+        </select><br>
+
+        <label>Гражданство:</label><br>
+        <select name="Гражданство" required>
+            {% for страна in страны %}
+                <option value="{{ страна.id }}">{{ страна.Название }}</option>
+            {% endfor %}
+        </select><br>
+
+        <label>Серия паспорта:</label><br>
+        <input type="text" name="Серия_паспорта" ><br>
+
+        <label>Номер паспорта:</label><br>
+        <input type="text" name="Номер_паспорта" required><br>
+
+        <label>ИНН:</label><br>
+        <input type="text" name="ИНН" pattern="\d{12}" title="ИНН должен состоять из 12 цифр" required><br>
+
+        <label>СНИЛС:</label><br>
+        <input type="text" name="Номер_СНИЛС" pattern="\d{3}-\d{3}-\d{3} \d{2}" title="Формат: XXX-XXX-XXX XX"><br>
+
+        <label>Телефон (без кода страны):</label><br>
+        <input type="text" name="Телефон" pattern="\d{10}" title="Телефон должен состоять из 10 цифр"><br>
+
+        <label>Email:</label><br>
+        <input type="email" name="Email" pattern="[^@]+@[^@]+\.[^@]+" title="Формат: email@example.com" ><br><br>
+
+        <button type="submit">Добавить слушателя</button>
+    </form>
+</div>
+<script>
+    function filterTable() {
+    const input = document.getElementById("Filter").value.toLowerCase();
+        document.querySelectorAll("#listener-table tbody tr").forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(input) ? "" : "none";
+        });
+    }
+    document.querySelector('button[name="Слушатели_XLSX_save"]').addEventListener('click', function (e) {
+    e.preventDefault();
+
+    const selectedIds = [];
+    document.querySelectorAll('#listener-table tbody input[type="checkbox"]').forEach((checkbox) => {
+        if (checkbox.checked) {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        }
+    });
+    //Если записи не выбраны галочками, будет добавлена вся таблица
+    if (selectedIds.length === 0) {
+        document.querySelectorAll('#listener-table tbody input[type="checkbox"]').forEach((checkbox) => {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        });
+        if(selectedIds.length === 0) {
+            alert("Нет данных для сохранения в таблицу Excel!")
+            throw new Error()
+        }
+    }
+    fetch("{% url 'export_listeners_XLSX' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify({ ids: selectedIds })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Ошибка при генерации таблицы Excel!');
+        return res.blob();
+    })
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "Слушатели.xlsx";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    })
+    .catch(err => alert(err));
+    });
+    </script>
+{% endblock %}

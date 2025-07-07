@@ -1,0 +1,219 @@
+{% extends 'main/MainMenu.html' %}
+{% block title %}ООО "Профресурс" - организации{% endblock %}
+{% block content %}
+    <h3>Список организаций</h3>
+    <div>
+        <table class="table" id="organisation-table">
+        <thead>
+            <tr>
+                <th>Выбор</th>
+                <th>Название</th>
+                <th>ИНН</th>
+                <th>ОГРН</th>
+                <th>Телефон</th>
+                <th>Email</th>
+                <th>Удалить</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for организация in организации %}
+                <tr data-id="{{ организация.id }}">
+                    <td><input type="checkbox"></td>
+                    <td>{{ организация.Название }}</td>
+                    <td>{{ организация.ИНН }}</td>
+                    <td>{{ организация.ОГРН }}</td>
+                    <td>{% if организация.Телефон %}
+                            +7{{ организация.Телефон }}
+                        {% endif %}</td>
+                    <td>{% if организация.Email %}
+                            {{ организация.Email }}
+                        {% endif %}</td></td>
+                    <td>
+                        <form action="{% url 'delete_organisation' организация.id %}">
+                            <button type="submit" class="delete-button" onclick="return confirm('Удалить эту запись?');">X</button>
+                        </form>
+                    </td>
+                </tr>
+             {% endfor %}
+        </tbody>
+        </table><br>
+         <div class="doc-panel">
+             <form id="import-form" action="{% url 'import_organisations_XLSX' %}" method="post" enctype="multipart/form-data" style="display: none;">
+                {% csrf_token %}
+                <input id="file-input" type="file" name="excel_file" accept=".xlsx" required onchange="document.getElementById('import-form').submit();">
+            </form>
+             <button type="submit" name="Организации_XLSX_save">Сохранить данные в таблицу Excel</button>
+             <button type="button" name="Организации_XLSX_load"
+                     onclick="document.getElementById('file-input').click();">Загрузить данные из таблицы Excel</button>
+             <button id="btn-all-cert">Составить удостоверения</button>
+        </div>
+        <h3>Добавление новой организации</h3>
+        <form class="account-form" method="post" action="{% url 'organisation_list' %}">
+            {% csrf_token %}
+            <label>Название:</label><br>
+            <input type="text" name="Название" required><br>
+
+            <label>ИНН:</label><br>
+            <input type="text" name="ИНН" title="ИНН должен состоять из 10 цифр" pattern="\d{10}" required><br>
+
+            <label>ОГРН:</label><br>
+            <input type="text" name="ОГРН"  title="ОГРН должен состоять из 13 цифр" pattern="\d{13}" required><br>
+            <label>Телефон (без кода страны):</label><br>
+            <input type="text" name="Телефон" pattern="\d{10}" title="Телефон должен состоять из 10 цифр"><br>
+            <label>Email:</label><br>
+            <input type="email" name="Email" pattern="[^@]+@[^@]+\.[^@]+" title="Формат: email@example.com"><br><br>
+            <button type="submit" name="submit_организация">Добавить организацию</button>
+        </form>
+    </div>
+    <h3>Привязка слушателей к организациям</h3>
+    <div>
+        <table class="table" id="org-linking-table">
+            <thead>
+                <tr>
+                    <th>Слушатель</th>
+                    <th>Организация</th>
+                    <th>Должность в организации</th>
+                    <th>Удалить</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for чел_орг in привязки %}
+                    <tr>
+                        <td>{{ чел_орг.Слушатель.Фамилия }} {{ чел_орг.Слушатель.Имя }}
+                            {{ чел_орг.Слушатель.Отчество|default_if_none:"" }} (ИНН: {{ чел_орг.Слушатель.ИНН }})</td>
+                        <td>{{ чел_орг.Организация.Название }} (ОГРН: {{ чел_орг.Организация.ОГРН }})</td>
+                        <td>{{ чел_орг.Должность }}</td>
+                        <td>
+                            <form action="{% url 'delete_org_linking' чел_орг.id %}">
+                                <button type="submit" class="delete-button" onclick="return confirm('Удалить привязку?');">X</button>
+                            </form>
+                        </td>
+                    </tr>
+                 {% endfor %}
+            </tbody>
+        </table>
+        <h3>Добавить привязку</h3>
+        <form class="account-form" method="post" action="{% url 'organisation_list' %}">
+            {% csrf_token %}
+            <label>Слушатель:</label><br>
+            <select name="Слушатель">
+                {% for слушатель in слушатели %}
+                <option value="{{ слушатель.id }}">
+                    {{ слушатель.Фамилия }} {{ слушатель.Имя }}
+                    {{ слушатель.Отчество|default_if_none:"" }} (ИНН: {{ слушатель.ИНН }})
+                </option>
+                {% endfor %}
+            </select><br>
+
+            <label>Организация:</label><br>
+            <select name="Организация">
+                {% for организация in организации %}
+                    <option value="{{ организация.id }}">{{ организация.Название }}</option>
+                {% endfor %}
+            </select><br>
+            <label>Должность:</label><br>
+            <input type="text" name="Должность"  style="width: 400px;" required><br><br>
+            <button type="submit" name="submit_привязка">Привязать</button>
+        </form>
+    </div>
+    <script>
+    function filterTable() {
+    const input = document.getElementById("Filter").value.toLowerCase();
+        // Таблица организаций
+        document.querySelectorAll("#organisation-table tbody tr").forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(input) ? "" : "none";
+        });
+
+        // Таблица привязок
+        document.querySelectorAll("#org-linking-table tbody tr").forEach(row => {
+            const orgCell = row.querySelector("td:nth-child(2)"); // 2-я колонка — организация
+            const text = orgCell?.innerText.toLowerCase() || "";
+            row.style.display = text.includes(input) ? "" : "none";
+        });
+    }
+    document.querySelector('button[name="Организации_XLSX_save"]').addEventListener('click', function (e) {
+    e.preventDefault();
+    const selectedIds = [];
+    document.querySelectorAll('#organisation-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
+        if (checkbox.checked) {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        }
+    });
+    //Если записи не выбраны галочками, будет добавлена вся таблица
+    if (selectedIds.length === 0) {
+        document.querySelectorAll('#organisation-table tbody input[type="checkbox"]').forEach((checkbox, index) => {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        });
+        if(selectedIds.length === 0) {
+            alert("Нет данных для сохранения в таблицу Excel!")
+            throw new Error()
+        }
+    }
+    fetch("{% url 'export_organisations_XLSX' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify({ ids: selectedIds })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Ошибка при генерации таблицы Excel!');
+        return res.blob();
+    })
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "Сотрудники_организаций.xlsx";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    })
+    .catch(err => alert(err));
+    });
+    document.getElementById("btn-all-cert").addEventListener("click", function(e) {
+    e.preventDefault();
+
+    const selectedIds = [];
+    document.querySelectorAll('#organisation-table tbody input[type="checkbox"]').forEach(checkbox => {
+        if (checkbox.checked) {
+            const id = checkbox.closest('tr').dataset.id;
+            if (id) selectedIds.push(id);
+        }
+    });
+
+    if (selectedIds.length != 1) {
+        alert("Выберите одну организацию.");
+        return;
+    }
+    fetch("{% url 'generate_certificates_zip' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify({ ids: selectedIds })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Ошибка при создании документов");
+        return res.blob();
+    })
+    .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Документы_по_удостоверениям.zip";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    })
+    .catch(err => alert(err));
+});
+</script>
+{% endblock %}

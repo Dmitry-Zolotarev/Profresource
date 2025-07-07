@@ -1,0 +1,59 @@
+<!--MainMenu.html-->
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Профресурс{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'main/style.css' %}">
+    <style>
+        .tab {
+            overflow: hidden;
+        }
+
+        .tab a {
+            padding: 10px;
+            display: inline-block;
+            text-decoration: none;
+            font-size: 14pt;
+            color: black;
+        }
+        .tab a.active {
+            background-color: #ccc;
+        }
+    </style>
+    {% if messages %}
+    <script>
+        {% for message in messages %}
+            alert("{{ message|escapejs }}");
+        {% endfor %}
+    </script>
+    {% endif %}
+</head>
+<body>
+<br><h2>Цифровая система ООО "Профресурс"</h2>
+<div class="tab">
+    <a href="{% url 'student_list' %}" class="student_list">Cлушатели</a>
+<<<<<<< HEAD
+=======
+    <a href="{% url 'listener_addresses' %}" class="listener_addresses">Адреса слушателей</a>
+>>>>>>> 2889caa (07.07.2025)
+    <a href="{% url 'group_list' %}" class="group_list">Группы</a>
+    <a href="{% url 'course_list' %}" class="course_list">Курсы</a>
+    <a href="{% url 'material_list' %}" class="material_list">Материалы курсов</a>
+    <a href="{% url 'organisation_list' %}" class="organisation_list">Организации</a>
+<<<<<<< HEAD
+=======
+    <a href="{% url 'organisation_addresses' %}" class="organisation_addresses">Адреса организаций</a>
+>>>>>>> 2889caa (07.07.2025)
+    <a href="{% url 'country_list' %}" class="country_list">Страны</a>
+</div>
+<div class="tab-content">
+    <br>
+    <input type="text" placeholder="Поиск записей в таблице" id ="Filter" name="Фильтр" style="width: 400px;" onkeyup="filterTable()" required>
+    <br>
+    {% block content %}
+    {% endblock %}
+</div>
+</body>
+</html>

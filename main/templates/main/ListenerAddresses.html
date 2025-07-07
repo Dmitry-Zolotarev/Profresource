@@ -1,0 +1,143 @@
+{% extends 'main/MainMenu.html' %}
+{% block title %}ООО "Профресурс" - адреса слушателей{% endblock %}
+{% block content %}
+
+<h3>Адреса слушателей</h3>
+<table class="table" id="addresses-table">
+    <thead>
+        <tr>
+            <th>Слушатель</th>
+            <th>Адрес прописки</th>
+            <th>Удалить</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for адрес in адреса %}
+        <tr>
+            <td>
+                {{ адрес.Слушатель.Фамилия }} {{ адрес.Слушатель.Имя }} {{ адрес.Слушатель.Отчество|default_if_none:"" }}
+                (ИНН: {{ адрес.Слушатель.ИНН }})
+            </td>
+            <td>{{ адрес.Адрес.full_address }}</td>
+            <td>
+                    <form action="{% url 'delete_listener_address' адрес.id %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="delete-button" onclick="return confirm('Удалить запись?');">X</button>
+                    </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h3>Добавить адрес</h3>
+<form method="post" action="{% url 'listener_addresses' %}">
+    {% csrf_token %}
+    <label>Слушатель:</label><br>
+    <select name="Слушатель" required>
+        {% for слушатель in слушатели %}
+        <option value="{{ слушатель.id }}">
+            {{ слушатель.Фамилия }} {{ слушатель.Имя }} {{ слушатель.Отчество|default_if_none:"" }} (ИНН: {{ слушатель.ИНН }})
+        </option>
+        {% endfor %}
+    </select><br>
+
+    <label>Страна:</label><br>
+    <select name="Страна" id="country-select" required>
+        {% for страна in страны %}
+        <option value="{{ страна.id }}">{{ страна.Название }}</option>
+        {% endfor %}
+    </select><br>
+
+    <label>Регион:</label><br>
+    <select name="Регион" id="region-select" required></select><br>
+
+    <label>Район:</label><br>
+    <select name="Район" id="district-select"></select><br>
+
+    <label>Населённый пункт:</label><br>
+    <select name="Населенный_пункт" id="place-select" required></select><br>
+
+    <label>Почтовый индекс:</label><br>
+    <select name="Почтовый_индекс" id="postcode-select" required>
+
+    </select><br>
+
+    <label>Улица:</label><br>
+    <select name="Улица" id="street-select" required></select><br>
+
+    <label>Дом и квартира:</label><br>
+    <input type="text" name="Номер_дома" required><br><br>
+
+    <button type="submit">Добавить адрес</button>
+</form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+    const countrySelect = document.getElementById('country-select');
+    const regionSelect = document.getElementById('region-select');
+    const districtSelect = document.getElementById('district-select');
+    const placeSelect = document.getElementById('place-select');
+    const postcodeSelect = document.getElementById('postcode-select');
+    const streetSelect = document.getElementById('street-select');
+
+    function clearSelect(select) {
+        select.innerHTML = '';
+    }
+
+    function populateSelect(select, data, labelKey = 'Название') {
+        clearSelect(select);
+        const option = document.createElement('option');
+        option.textContent = ''
+        select.appendChild(option);
+        data.forEach(obj => {
+            const option = document.createElement('option');
+            option.value = obj.id;
+            option.textContent = obj[labelKey] || obj.name;
+            select.appendChild(option);
+        });
+    }
+
+    function loadOptions(url, paramName, paramValue, targetSelect, labelKey = 'Название') {
+        fetch(`${url}?${paramName}=${paramValue}`)
+            .then(res => res.json())
+            .then(data => populateSelect(targetSelect, data, labelKey));
+    }
+
+    // 🔽 Загрузка регионов при загрузке страницы
+    if (countrySelect.value) {
+        loadOptions("/ajax/regions/", 'Страна', countrySelect.value, regionSelect);
+    }
+
+    countrySelect.addEventListener('change', function () {
+        loadOptions("/ajax/regions/", 'Страна', this.value, regionSelect);
+        clearSelect(districtSelect);
+        clearSelect(placeSelect);
+        clearSelect(postcodeSelect);
+        clearSelect(streetSelect);
+    });
+
+    regionSelect.addEventListener('change', function () {
+        const regionId = this.value;
+        loadOptions("/ajax/districts/", 'region_id', regionId, districtSelect);
+        loadOptions("/ajax/places/", 'region_id', regionId, placeSelect);
+        clearSelect(postcodeSelect);
+        clearSelect(streetSelect);
+    });
+
+    districtSelect.addEventListener('change', function () {
+        loadOptions("/ajax/places/", 'district_id', this.value, placeSelect);
+        clearSelect(postcodeSelect);
+        clearSelect(streetSelect);
+    });
+
+    placeSelect.addEventListener('change', function () {
+        const placeId = this.value;
+        loadOptions("/ajax/postcodes/", 'place_id', placeId, postcodeSelect, 'Индекс');
+        loadOptions("/ajax/streets/", 'place_id', placeId, streetSelect);
+    });
+});
+
+</script>
+
+{% endblock %}

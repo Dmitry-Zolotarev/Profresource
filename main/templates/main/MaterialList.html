@@ -1,0 +1,67 @@
+{% extends 'main/MainMenu.html' %}
+{% block title %}ООО "Профресурс" - учебные материалы{% endblock %}
+{% block content %}
+    <h3>Список учебных материалов</h3>
+    <div>
+        <table class="table" id="material-table">
+            <thead>
+                <tr>
+                    <th>Курс</th>
+                    <th>Тип материала</th>
+                    <th>Материал</th>
+                    <th>Удалить</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for материал in материалы %}
+                    <tr>
+                        <td>{{ материал.Курс.Название }} - {{ материал.Курс.Тип.Название }}</td>
+                        <td>{{ материал.Тип.Название }}</td>
+                        <td>{% with ссылка=материал.Ссылка_на_материал %}
+                            <a href="{% if '://' in ссылка %}{{ ссылка }}{% else %}http://{{ ссылка }}{% endif %}"
+                             title="{{ ссылка }}" onclick="return confirm('Вы переходите по ссылке:\n{{ ссылка }}\n\nПродолжить?');"
+                            target="_blank">{{ материал.Название }}</a>{% endwith %}
+                        </td>
+                        <td>
+                            <form method="post" action="{% url 'delete_material' материал.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="delete-button" onclick="return confirm('Удалить эту запись?');">X</button>
+                            </form>
+                        </td>
+                    </tr>
+                 {% endfor %}
+            </tbody>
+        </table>
+
+        <h3>Добавление нового учебного материала</h3>
+        <form class="account-form" method="post" enctype="multipart/form-data" action="{% url 'material_list' %}">
+            {% csrf_token %}
+            <label>Курс:</label><br>
+            <select name="Курс">
+                {% for курс in курсы %}
+                    <option value="{{ курс.id }}">{{ курс.Название }}</option>
+                {% endfor %}
+            </select><br>
+            <label>Тип материала:</label><br>
+            <select name="Тип">
+                {% for тип in типы %}
+                    <option value="{{ тип.id }}">{{ тип.Название }}</option>
+                {% endfor %}
+            </select><br>
+            <label>Название материала:</label><br>
+            <input type="text" name="Название" style="width: 440px;" required><br>
+            <label>Ссылка на материал:</label><br>
+            <input type="text" name="Ссылка" style="width: 440px;" required><br><br>
+            <button type="submit" name="submit_material">Добавить материал</button>
+        </form>
+    </div>
+    <script>
+    function filterTable() {
+    const input = document.getElementById("Filter").value.toLowerCase();
+        document.querySelectorAll("#material-table tbody tr").forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(input) ? "" : "none";
+        });
+    }
+    </script>
+{% endblock %}
